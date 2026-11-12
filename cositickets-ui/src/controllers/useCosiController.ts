@@ -8,19 +8,18 @@ export function useCosiController() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'raffles_inspect'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'raffles_inspect' | 'customer_portal'>('overview');
   const [loading, setLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Estados de datos
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [rafflesList, setRafflesList] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [selectedRaffleBoard, setSelectedRaffleBoard] = useState<RaffleBoardState | null>(null);
   const [editingRaffle, setEditingRaffle] = useState<any | null>(null);
   const [managingTicket, setManagingTicket] = useState<BoardItem | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
-  // Filtros Admin
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'ORGANIZER' | 'CUSTOMER'>('ALL');
   const [searchUser, setSearchUser] = useState('');
 
@@ -28,8 +27,6 @@ export function useCosiController() {
     setAlertMsg({ type, text });
     setTimeout(() => setAlertMsg(null), 5000);
   };
-
-  const [notifications, setNotifications] = useState<any[]>([]);
 
   const loadData = async () => {
     if (!currentUser) return;
@@ -44,16 +41,12 @@ export function useCosiController() {
           setRafflesList(orgRaffles);
         }
       } else if (currentUser.role === 'ORGANIZER') {
-        const notifs = await CosiAPI.getOrganizerNotifications(currentUser.id);
-        setNotifications(notifs || []);
-
-        const markNotificationAsRead = async (id: string) => {
-          await CosiAPI.markNotificationRead(id);
-          setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
-        };
-        
-        const myRaffles = await CosiAPI.getMyRaffles(currentUser.id);
+        const [myRaffles, notifs] = await Promise.all([
+          CosiAPI.getMyRaffles(currentUser.id),
+          CosiAPI.getOrganizerNotifications(currentUser.id),
+        ]);
         setRafflesList(myRaffles);
+        setNotifications(notifs || []);
       }
     } catch (err: any) {
       console.error(err);
@@ -67,7 +60,7 @@ export function useCosiController() {
       const methods = await CosiAPI.getPaymentMethods();
       setPaymentMethods(methods || []);
     } catch (e) {
-      console.warn("No se cargaron métodos de pago:", e);
+      console.warn('No se cargaron métodos de pago:', e);
     }
   };
 
@@ -83,19 +76,34 @@ export function useCosiController() {
     try {
       const res = await CosiAPI.login(email, pass);
       localStorage.setItem('cositickets_token', res.access_token);
+      const role = (res.role as any) || 'CUSTOMER';
       const userObj: User = {
         id: res.user_id,
         name: email.split('@')[0],
-        email: email,
-        role: (res.role as any) || 'ADMIN',
-        is_active: true
+        email,
+        role,
+        is_active: true,
       };
       localStorage.setItem('cosi_user', JSON.stringify(userObj));
       setCurrentUser(userObj);
-      setActiveTab('overview');
+      setActiveTab(role === 'CUSTOMER' ? 'customer_portal' : 'overview');
       showAlert('Bienvenido a CosiTickets.');
     } catch (err: any) {
       showAlert(err.message || 'Error al autenticar credenciales', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (payload: { name: string; email: string; phone?: string; password: string }) => {
+    setLoading(true);
+    try {
+      await CosiAPI.register(payload);
+      showAlert('Registro completado en CosiTickets. Inicia sesión con tus credenciales.');
+      return true;
+    } catch (err: any) {
+      showAlert(err.message || 'Error al registrar usuario', 'error');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -148,7 +156,7 @@ export function useCosiController() {
     try {
       await CosiAPI.updateRaffleClosure(raffleId, currentUser.id, {
         draw_date: new Date(drawDate).toISOString(),
-        reason
+        reason,
       });
       showAlert('Rifa modificada y evento registrado en auditoría.');
       setEditingRaffle(null);
@@ -166,7 +174,7 @@ export function useCosiController() {
     try {
       await CosiAPI.updateTicketDetails(ticketId, {
         ...payload,
-        organizer_id: currentUser.id
+        organizer_id: currentUser.id,
       });
       showAlert('Boleto, cliente y estado de pago actualizados con éxito.');
       setManagingTicket(null);
@@ -181,6 +189,15 @@ export function useCosiController() {
     }
   };
 
+  const markNotificationRead = async (notificationId: string) => {
+    try {
+      await CosiAPI.markNotificationRead(notificationId);
+      setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return {
     currentUser,
     activeTab,
@@ -190,6 +207,8 @@ export function useCosiController() {
     setAlertMsg,
     allUsers,
     rafflesList,
+    notifications,
+    markNotificationRead,
     selectedRaffleBoard,
     setSelectedRaffleBoard,
     editingRaffle,
@@ -202,12 +221,13 @@ export function useCosiController() {
     searchUser,
     setSearchUser,
     login,
+    register,
     logout,
     toggleUserStatus,
     createOrganizer,
     openBoardPreview,
     saveRaffleEdit,
     saveTicketDetails,
-    showAlert
+    showAlert,
   };
 }

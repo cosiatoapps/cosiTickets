@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.core.database import engine, Base
 from app.routers import (
     auth_router,
@@ -9,7 +10,6 @@ from app.routers import (
     system_router,
 )
 
-# Sincronización inicial de esquema
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -26,14 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Registro modular de Vistas (Routers)
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["Autenticación"])
 app.include_router(admin_router.router, prefix="/api/v1/admin", tags=["Administrador (RBAC)"])
 app.include_router(organizer_router.router, prefix="/api/v1/organizer", tags=["Organizador / Manager"])
 app.include_router(customer_router.router, prefix="/api/v1", tags=["Portal Cliente & Tablero Público"])
-app.include_router(system_router.router, prefix="/api/v1", tags=["Sistema, Pagos & Cron"])
-
-
-@app.get("/health", tags=["Health"])
-def health_check():
-    return {"status": "healthy", "architecture": "MVC", "version": "2.1.0"}
+app.include_router(system_router.router, prefix="/api/v1/system", tags=["Sistema & Health"])

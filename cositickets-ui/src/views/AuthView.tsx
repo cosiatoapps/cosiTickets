@@ -3,17 +3,17 @@ import { Ticket, Mail, Lock, Eye, EyeOff, RefreshCw, ArrowRight, CheckCircle2, A
 
 interface AuthViewProps {
   onLogin: (email: string, pass: string) => Promise<void>;
+  onRegister: (payload: { name: string; email: string; phone?: string; password: string }) => Promise<boolean>;
   loading: boolean;
   alertMsg: { type: 'success' | 'error'; text: string } | null;
-  onShowAlert: (text: string, type?: 'success' | 'error') => void;
 }
 
-export const AuthView: React.FC<AuthViewProps> = ({ onLogin, loading, alertMsg, onShowAlert }) => {
+export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, loading, alertMsg }) => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [loginEmail, setLoginEmail] = useState('admin@cositickets.com');
   const [loginPassword, setLoginPassword] = useState('Password@2026!');
-  
+
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPhone, setRegisterPhone] = useState('');
@@ -26,25 +26,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, loading, alertMsg, 
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const res = await fetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: registerName,
-          email: registerEmail,
-          phone: registerPhone,
-          password: registerPassword,
-          role: 'CUSTOMER'
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Error en registro');
-      onShowAlert('Registro completado en CosiTickets. Inicia sesión con tus credenciales.');
+    const ok = await onRegister({
+      name: registerName,
+      email: registerEmail,
+      phone: registerPhone,
+      password: registerPassword,
+    });
+    if (ok) {
       setAuthMode('login');
       setLoginEmail(registerEmail);
-    } catch (err: any) {
-      onShowAlert(err.message, 'error');
+      setRegisterPassword('');
     }
   };
 
@@ -75,12 +66,18 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, loading, alertMsg, 
       <div className="flex-1 flex items-center justify-center p-4 z-10">
         <div className="w-full max-w-md">
           {alertMsg && (
-            <div className={`mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2.5 ${
-              alertMsg.type === 'success' 
-                ? 'bg-cosi-green/15 border-cosi-green/40 text-cosi-green' 
-                : 'bg-cosi-rose/15 border-cosi-rose/40 text-cosi-rose'
-            }`}>
-              {alertMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+            <div
+              className={`mb-4 p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2.5 ${
+                alertMsg.type === 'success'
+                  ? 'bg-cosi-green/15 border-cosi-green/40 text-cosi-green'
+                  : 'bg-cosi-rose/15 border-cosi-rose/40 text-cosi-rose'
+              }`}
+            >
+              {alertMsg.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
               <span>{alertMsg.text}</span>
             </div>
           )}
@@ -90,6 +87,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, loading, alertMsg, 
 
             <div className="flex border-b border-white/10 mb-6">
               <button
+                type="button"
                 onClick={() => setAuthMode('login')}
                 className={`pb-3 text-xs font-bold transition-all px-4 border-b-2 -mb-[1px] uppercase tracking-wider ${
                   authMode === 'login'
@@ -100,6 +98,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, loading, alertMsg, 
                 Iniciar Sesión
               </button>
               <button
+                type="button"
                 onClick={() => setAuthMode('register')}
                 className={`pb-3 text-xs font-bold transition-all px-4 border-b-2 -mb-[1px] uppercase tracking-wider ${
                   authMode === 'register'
@@ -160,7 +159,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, loading, alertMsg, 
                     disabled={loading}
                     className="w-full py-3 cosi-btn-purple flex items-center justify-center gap-2 text-xs"
                   >
-                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><span>Ingresar a CosiTickets</span> <ArrowRight className="w-4 h-4" /></>}
+                    {loading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <span>Ingresar a CosiTickets</span> <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -168,6 +173,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, loading, alertMsg, 
                   <div className="font-bold text-cosi-yellow">Credenciales rápidas de prueba:</div>
                   <div>• <b>Admin:</b> admin@cositickets.com / Password@2026!</div>
                   <div>• <b>Responsable:</b> mariana.rifas@cositickets.com / Password@2026!</div>
+                  <div>• <b>Cliente:</b> juan.perez@email.com / Password@2026!</div>
                 </div>
               </form>
             ) : (
