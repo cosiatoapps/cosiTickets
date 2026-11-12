@@ -72,6 +72,21 @@ export function useCosiController() {
       }
     } catch (err: any) {
       console.error('Error cargando datos del controlador:', err);
+      showAlert(err.message || 'Error al cargar métricas del panel', 'error');
+      setAnalyticsData((prev: any) => prev ?? {
+        kpis: {
+          total_raffles: 0,
+          active_raffles: 0,
+          total_budgeted: 0,
+          total_collected: 0,
+          total_pending_collection: 0,
+          total_prize_cost: 0,
+          global_net_profit: 0,
+          global_execution_pct: 0,
+        },
+        upcoming_raffles: [],
+        raffles: [],
+      });
     } finally {
       setLoading(false);
     }
@@ -306,5 +321,6 @@ export function useCosiController() {
     reserveCustomerTicket,
     swapCustomerTicket,
     showAlert,
+    analyticsData, 
   };
 }

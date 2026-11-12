@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
 from app.models import Raffle, Ticket, CustomerPurchase, User
 
@@ -27,8 +26,8 @@ class AnalyticsController:
         for r in raffles:
             tickets = db.query(Ticket).filter(Ticket.raffle_id == r.id).all()
             total_t = len(tickets)
-            paid_t = sum(1 for t in tickets if (t.status.value if hasattr(t.status, "value") else t.status) == "PAID")
-            reserved_t = sum(1 for t in tickets if (t.status.value if hasattr(t.status, "value") else t.status) == "RESERVED")
+            paid_t = sum(1 for t in tickets if (t.status.value if hasattr(t.status, "value") else str(t.status)) == "PAID")
+            reserved_t = sum(1 for t in tickets if (t.status.value if hasattr(t.status, "value") else str(t.status)) == "RESERVED")
             avail_t = total_t - (paid_t + reserved_t)
 
             ticket_price = float(r.ticket_price or 0)
@@ -40,15 +39,17 @@ class AnalyticsController:
             committed_value = (paid_t + reserved_t) * ticket_price
             pending_collection = max(0.0, committed_value - collected_value)
 
-            # Productividad: Retorno sobre costo del premio y punto de equilibrio
             net_profit = collected_value - prize_cost
             roi_pct = round((net_profit / prize_cost * 100), 1) if prize_cost > 0 else 100.0
             breakeven_pct = min(100.0, round((collected_value / prize_cost * 100), 1)) if prize_cost > 0 else 100.0
 
-            draw_dt = r.draw_date if r.draw_date.tzinfo else r.draw_date.replace(tzinfo=timezone.utc)
-            days_left = (draw_dt - now).days
-            status_str = r.status.value if hasattr(r.status, "value") else str(r.status)
+            if r.draw_date:
+                draw_dt = r.draw_date if r.draw_date.tzinfo else r.draw_date.replace(tzinfo=timezone.utc)
+                days_left = (draw_dt - now).days
+            else:
+                days_left = 0
 
+            status_str = r.status.value if hasattr(r.status, "value") else str(r.status)
             organizer = db.query(User).filter(User.id == r.organizer_id).first()
 
             total_budgeted_all += budgeted_value
@@ -62,7 +63,7 @@ class AnalyticsController:
                 "prize_name": r.prize_name,
                 "organizer_name": organizer.name if organizer else "N/A",
                 "status": status_str,
-                "draw_date": r.draw_date.isoformat(),
+                "draw_date": r.draw_date.isoformat() if r.draw_date else now.isoformat(),
                 "days_remaining": days_left,
                 "urgency": (
                     "CLOSED" if status_str != "ACTIVE" or days_left < 0

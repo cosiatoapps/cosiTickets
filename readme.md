@@ -363,7 +363,7 @@ flowchart TB
 ---
 
 <!-- AUTO-STATUS:START -->
-> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 18:43`
+> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 18:50`
 
 ### 📊 Estado de Módulos Backend (Auto-generado por `deploy_agent.py`)
 
@@ -380,6 +380,7 @@ flowchart TB
 ## 🚀 Historial de Despliegues Verificados
 
 <!-- AUTO-DEPLOY-LOG:START -->
+- **`v2.1.1`** (`2026-11-12 18:50` · `develop`): fix(analytics): asegurar endpoint admin/analytics y manejo de estado por defecto en UI
 - **`v2.1.1`** (`2026-11-12 18:43` · `develop`): feat(ui): integrar AnalyticsDashboardView en paneles Admin y Manager
 - **`v2.1.1`** (`2026-11-12 18:14` · `develop`): fix(customer): blindar arreglos customerTickets y publicRaffles en controlador y vista
 - **`v2.1.1`** (`2026-11-12 18:03` · `develop`): feat(ui): actualizar App.tsx con soporte completo RBAC y CustomerPortalView
