@@ -363,23 +363,24 @@ flowchart TB
 ---
 
 <!-- AUTO-STATUS:START -->
-> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 18:14`
+> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 18:43`
 
 ### 📊 Estado de Módulos Backend (Auto-generado por `deploy_agent.py`)
 
 | Módulo Router | Archivo | Endpoints Activos |
 | :--- | :--- | :---: |
-| **Admin** | `app/routers/admin_router.py` | `7` |
+| **Admin** | `app/routers/admin_router.py` | `8` |
 | **Auth** | `app/routers/auth_router.py` | `2` |
 | **Customer** | `app/routers/customer_router.py` | `5` |
-| **Organizer** | `app/routers/organizer_router.py` | `7` |
+| **Organizer** | `app/routers/organizer_router.py` | `8` |
 | **System** | `app/routers/system_router.py` | `3` |
-| **Total API REST** | **5 Routers Modulares** | **`24`** |
+| **Total API REST** | **5 Routers Modulares** | **`26`** |
 <!-- AUTO-STATUS:END -->
 
 ## 🚀 Historial de Despliegues Verificados
 
 <!-- AUTO-DEPLOY-LOG:START -->
+- **`v2.1.1`** (`2026-11-12 18:43` · `develop`): feat(ui): integrar AnalyticsDashboardView en paneles Admin y Manager
 - **`v2.1.1`** (`2026-11-12 18:14` · `develop`): fix(customer): blindar arreglos customerTickets y publicRaffles en controlador y vista
 - **`v2.1.1`** (`2026-11-12 18:03` · `develop`): feat(ui): actualizar App.tsx con soporte completo RBAC y CustomerPortalView
 - **`v2.1.1`** (`2026-11-12 17:47` · `develop`): fix(tickets): hacer opcionales amount_paid, payment_method_code en reserva sin abono y notes

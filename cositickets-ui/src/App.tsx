@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import {
   Ticket, Users, Layers, LogOut, CheckCircle2, AlertCircle,
-  TrendingUp, ShieldCheck, Search, UserX, UserCheck,
-  Calendar, Grid, Edit3, Bell
+  Search, UserX, UserCheck, Calendar, Grid, Edit3, Bell
 } from 'lucide-react';
 import { useCosiController } from './controllers/useCosiController';
 import { AuthView } from './views/AuthView';
 import { BoardModal } from './views/BoardModal';
 import { TicketManagerModal } from './views/TicketManagerModal';
 import { CustomerPortalView } from './views/CustomerPortalView';
+import { AnalyticsDashboardView } from './views/AnalyticsDashboardView';
 
 export default function App() {
   const cosi = useCosiController();
@@ -103,9 +103,9 @@ export default function App() {
             </div>
             <p className="text-[11px] text-slate-400">
               {isAdmin
-                ? 'Panel Central de Control, Supervisión y Auditoría'
+                ? 'Panel Central de Control, Analítica y Auditoría'
                 : isOrganizer
-                ? 'Gestión Operativa de Rifas, Tableros y Pagos'
+                ? 'Gestión Operativa, Productividad y Tableros'
                 : 'Consulta tus boletos, participa en rifas activas y revisa resultados'}
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function App() {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              {isAdmin ? 'Dashboard' : 'Mis Rifas'}
+              {isAdmin ? 'Dashboard & Analítica' : 'Mis Rifas & Métricas'}
             </button>
 
             {isAdmin && (
@@ -212,10 +212,18 @@ export default function App() {
         )}
 
         {/* =================================================================
-            2. VISTA ORGANIZER: MIS RIFAS + ALERTAS
+            2. VISTA ORGANIZER: ANALÍTICA + ALERTAS + MIS RIFAS
            ================================================================= */}
         {isOrganizer && (
           <div className="space-y-6">
+            {/* Gráficos de Productividad, Presupuesto vs Recaudo, Avance y Vencimientos */}
+            <AnalyticsDashboardView
+              analytics={cosi.analyticsData}
+              isAdmin={false}
+              onInspectBoard={(raffleId) => cosi.openBoardPreview(raffleId)}
+            />
+
+            {/* Alertas Recientes de Clientes */}
             {cosi.notifications.length > 0 && (
               <div className="cosi-card p-5 border-l-4 border-l-cosi-yellow space-y-3">
                 <div className="flex items-center justify-between">
@@ -246,6 +254,7 @@ export default function App() {
               </div>
             )}
 
+            {/* Tarjetas Operativas de Mis Rifas */}
             <div className="cosi-card p-6">
               <div className="mb-5">
                 <h2 className="text-base font-extrabold text-white">Mis Rifas Asignadas</h2>
@@ -301,39 +310,14 @@ export default function App() {
         )}
 
         {/* =================================================================
-            3. VISTA ADMIN: OVERVIEW
+            3. VISTA ADMIN: DASHBOARD & ANALÍTICA GLOBAL
            ================================================================= */}
         {isAdmin && cosi.activeTab === 'overview' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="cosi-card p-5 border-l-4 border-l-cosi-purple">
-                <div className="text-xs font-bold text-slate-400 uppercase">Rifas en Operación</div>
-                <div className="text-3xl font-extrabold text-white mt-1">3</div>
-                <div className="text-[11px] text-cosi-purple font-semibold mt-2 flex items-center gap-1">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>Sorteos activos en CosiTickets</span>
-                </div>
-              </div>
-              <div className="cosi-card p-5 border-l-4 border-l-cosi-green">
-                <div className="text-xs font-bold text-slate-400 uppercase">Recaudo Acumulado</div>
-                <div className="text-3xl font-extrabold text-cosi-green mt-1">$ 230.000 COP</div>
-                <div className="text-[11px] text-slate-400 mt-2">Abonos y pagos validados</div>
-              </div>
-              <div className="cosi-card p-5 border-l-4 border-l-cosi-yellow">
-                <div className="text-xs font-bold text-slate-400 uppercase">Responsables Habilitados</div>
-                <div className="text-3xl font-extrabold text-cosi-yellow mt-1">{cosi.rafflesList.length || 1}</div>
-                <div className="text-[11px] text-slate-400 mt-2">Control de cupos activo</div>
-              </div>
-              <div className="cosi-card p-5 border-l-4 border-l-cosi-cyan">
-                <div className="text-xs font-bold text-slate-400 uppercase">Seguridad Criptográfica</div>
-                <div className="text-3xl font-extrabold text-cosi-cyan mt-1">NIST</div>
-                <div className="text-[11px] text-cosi-green mt-2 font-semibold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Argon2id + Bitácora Inmutable</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AnalyticsDashboardView
+            analytics={cosi.analyticsData}
+            isAdmin={true}
+            onInspectBoard={(raffleId) => cosi.openBoardPreview(raffleId)}
+          />
         )}
 
         {/* =================================================================

@@ -90,6 +90,7 @@ class Raffle(Base):
     winning_number = Column(String(20), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    prize_cost = Column(Numeric(12, 2), default=0.0)
 
     organizer = relationship("User", back_populates="raffles")
     tickets = relationship("Ticket", back_populates="raffle", cascade="all, delete-orphan")

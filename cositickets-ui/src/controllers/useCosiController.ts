@@ -29,6 +29,9 @@ export function useCosiController() {
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'ORGANIZER' | 'CUSTOMER'>('ALL');
   const [searchUser, setSearchUser] = useState('');
 
+  // Analítica
+  const [analyticsData, setAnalyticsData] = useState<any | null>(null);
+
   const showAlert = (text: string, type: 'success' | 'error' = 'success') => {
     setAlertMsg({ type, text });
     setTimeout(() => setAlertMsg(null), 5000);
@@ -43,16 +46,22 @@ export function useCosiController() {
           const users = await CosiAPI.getAllUsers();
           setAllUsers(Array.isArray(users) ? users : []);
         } else {
-          const orgRaffles = await CosiAPI.getOrganizersRaffles();
+          const [orgRaffles, analytics] = await Promise.all([
+            CosiAPI.getOrganizersRaffles(),
+            CosiAPI.getAdminAnalytics(),
+          ]);
           setRafflesList(Array.isArray(orgRaffles) ? orgRaffles : []);
+          setAnalyticsData(analytics);
         }
       } else if (currentUser.role === 'ORGANIZER') {
-        const [myRaffles, notifs] = await Promise.all([
+        const [myRaffles, notifs, analytics] = await Promise.all([
           CosiAPI.getMyRaffles(currentUser.id),
           CosiAPI.getOrganizerNotifications(currentUser.id),
+          CosiAPI.getOrganizerAnalytics(currentUser.id),
         ]);
         setRafflesList(Array.isArray(myRaffles) ? myRaffles : []);
         setNotifications(Array.isArray(notifs) ? notifs : []);
+        setAnalyticsData(analytics);
       } else if (currentUser.role === 'CUSTOMER') {
         const [raffles, myTicketsRes] = await Promise.all([
           CosiAPI.getPublicRaffles(),

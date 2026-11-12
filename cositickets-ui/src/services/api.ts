@@ -110,4 +110,6 @@ export const CosiAPI = {
   // Sistema
   getPaymentMethods: () => request<any[]>('/system/payment-methods'),
   getDailySummary: () => request<any>('/system/cron/daily-summary'),
+  getAdminAnalytics: () => request<any>('/admin/analytics'),
+  getOrganizerAnalytics: (organizerId: string) => request<any>(`/organizer/analytics/${organizerId}`),
 };
