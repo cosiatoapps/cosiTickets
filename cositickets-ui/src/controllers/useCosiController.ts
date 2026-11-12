@@ -12,6 +12,7 @@ export function useCosiController() {
   const [loading, setLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Estados de Administración y Organizador
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [rafflesList, setRafflesList] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -20,6 +21,11 @@ export function useCosiController() {
   const [managingTicket, setManagingTicket] = useState<BoardItem | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
+  // Estados del Portal Cliente
+  const [publicRaffles, setPublicRaffles] = useState<any[]>([]);
+  const [customerTickets, setCustomerTickets] = useState<any[]>([]);
+
+  // Filtros Admin
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'ORGANIZER' | 'CUSTOMER'>('ALL');
   const [searchUser, setSearchUser] = useState('');
 
@@ -35,21 +41,28 @@ export function useCosiController() {
       if (currentUser.role === 'ADMIN') {
         if (activeTab === 'users') {
           const users = await CosiAPI.getAllUsers();
-          setAllUsers(users);
+          setAllUsers(Array.isArray(users) ? users : []);
         } else {
           const orgRaffles = await CosiAPI.getOrganizersRaffles();
-          setRafflesList(orgRaffles);
+          setRafflesList(Array.isArray(orgRaffles) ? orgRaffles : []);
         }
       } else if (currentUser.role === 'ORGANIZER') {
         const [myRaffles, notifs] = await Promise.all([
           CosiAPI.getMyRaffles(currentUser.id),
           CosiAPI.getOrganizerNotifications(currentUser.id),
         ]);
-        setRafflesList(myRaffles);
-        setNotifications(notifs || []);
+        setRafflesList(Array.isArray(myRaffles) ? myRaffles : []);
+        setNotifications(Array.isArray(notifs) ? notifs : []);
+      } else if (currentUser.role === 'CUSTOMER') {
+        const [raffles, myTicketsRes] = await Promise.all([
+          CosiAPI.getPublicRaffles(),
+          CosiAPI.getCustomerTickets(currentUser.id),
+        ]);
+        setPublicRaffles(Array.isArray(raffles) ? raffles : []);
+        setCustomerTickets(Array.isArray(myTicketsRes?.tickets) ? myTicketsRes.tickets : []);
       }
     } catch (err: any) {
-      console.error(err);
+      console.error('Error cargando datos del controlador:', err);
     } finally {
       setLoading(false);
     }
@@ -58,7 +71,7 @@ export function useCosiController() {
   const loadPaymentMethods = async () => {
     try {
       const methods = await CosiAPI.getPaymentMethods();
-      setPaymentMethods(methods || []);
+      setPaymentMethods(Array.isArray(methods) ? methods : []);
     } catch (e) {
       console.warn('No se cargaron métodos de pago:', e);
     }
@@ -67,10 +80,13 @@ export function useCosiController() {
   useEffect(() => {
     if (currentUser) {
       loadData();
-      loadPaymentMethods();
+      if (currentUser.role !== 'CUSTOMER') {
+        loadPaymentMethods();
+      }
     }
   }, [currentUser, activeTab]);
 
+  // --- AUTENTICACIÓN ---
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
@@ -113,8 +129,12 @@ export function useCosiController() {
     localStorage.removeItem('cositickets_token');
     localStorage.removeItem('cosi_user');
     setCurrentUser(null);
+    setSelectedRaffleBoard(null);
+    setCustomerTickets([]);
+    setPublicRaffles([]);
   };
 
+  // --- ACCIONES ADMINISTRADOR ---
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
       await CosiAPI.toggleUserStatus(userId, !currentStatus);
@@ -138,18 +158,6 @@ export function useCosiController() {
     }
   };
 
-  const openBoardPreview = async (raffleId: string) => {
-    setLoading(true);
-    try {
-      const data = await CosiAPI.getRaffleBoard(raffleId);
-      setSelectedRaffleBoard(data);
-    } catch (err: any) {
-      showAlert('No se pudo cargar el tablero: ' + err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const saveRaffleEdit = async (raffleId: string, drawDate: string, reason: string) => {
     if (!currentUser) return;
     setLoading(true);
@@ -168,6 +176,19 @@ export function useCosiController() {
     }
   };
 
+  // --- TABLERO Y GESTIÓN DE BOLETOS (MANAGER / COMPARTIDO) ---
+  const openBoardPreview = async (raffleId: string) => {
+    setLoading(true);
+    try {
+      const data = await CosiAPI.getRaffleBoard(raffleId);
+      setSelectedRaffleBoard(data);
+    } catch (err: any) {
+      showAlert('No se pudo cargar el tablero: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const saveTicketDetails = async (ticketId: string, payload: any) => {
     if (!currentUser) return;
     setLoading(true);
@@ -179,7 +200,7 @@ export function useCosiController() {
       showAlert('Boleto, cliente y estado de pago actualizados con éxito.');
       setManagingTicket(null);
       if (selectedRaffleBoard) {
-        openBoardPreview(selectedRaffleBoard.id || selectedRaffleBoard.raffle_id!);
+        await openBoardPreview(selectedRaffleBoard.id || selectedRaffleBoard.raffle_id!);
       }
       loadData();
     } catch (err: any) {
@@ -198,25 +219,7 @@ export function useCosiController() {
     }
   };
 
-  const [publicRaffles, setPublicRaffles] = useState<any[]>([]);
-  const [customerTickets, setCustomerTickets] = useState<any[]>([]);
-
-  const loadCustomerPortalData = async () => {
-    setLoading(true);
-    try {
-      const raffles = await CosiAPI.getPublicRaffles();
-      setPublicRaffles(raffles || []);
-      if (currentUser?.id) {
-        const res = await CosiAPI.getCustomerTickets(currentUser.id);
-        setCustomerTickets(res.tickets || []);
-      }
-    } catch (err: any) {
-      showAlert(err.message || 'Error cargando catálogo de rifas', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // --- ACCIONES CLIENTE ---
   const reserveCustomerTicket = async (payload: {
     raffle_id: string;
     ticket_id: string;
@@ -229,7 +232,7 @@ export function useCosiController() {
       await CosiAPI.reservePublicTicket(payload);
       showAlert('Boleto apartado con éxito. El responsable de la rifa fue notificado.');
       await openBoardPreview(payload.raffle_id);
-      await loadCustomerPortalData();
+      await loadData();
       return true;
     } catch (err: any) {
       showAlert(err.message || 'No se pudo apartar el boleto', 'error');
@@ -249,7 +252,7 @@ export function useCosiController() {
         customer_id: currentUser.id,
       });
       showAlert('Cambio de número realizado y notificado al responsable.');
-      await loadCustomerPortalData();
+      await loadData();
       return true;
     } catch (err: any) {
       showAlert(err.message || 'No se pudo cambiar el número', 'error');
@@ -277,6 +280,8 @@ export function useCosiController() {
     managingTicket,
     setManagingTicket,
     paymentMethods,
+    publicRaffles,
+    customerTickets,
     roleFilter,
     setRoleFilter,
     searchUser,
@@ -289,9 +294,8 @@ export function useCosiController() {
     openBoardPreview,
     saveRaffleEdit,
     saveTicketDetails,
+    reserveCustomerTicket,
+    swapCustomerTicket,
     showAlert,
-    loadCustomerPortalData, 
-    reserveCustomerTicket, 
-    swapCustomerTicket, 
   };
 }

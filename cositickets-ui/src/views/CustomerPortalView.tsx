@@ -7,8 +7,8 @@ import { BoardItem, RaffleBoardState } from '../models/types';
 
 interface CustomerPortalViewProps {
   currentUser: any;
-  publicRaffles: any[];
-  customerTickets: any[];
+  publicRaffles?: any[];
+  customerTickets?: any[];
   boardData: RaffleBoardState | null;
   loading: boolean;
   onOpenBoard: (raffleId: string) => Promise<void>;
@@ -26,8 +26,8 @@ interface CustomerPortalViewProps {
 
 export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
   currentUser,
-  publicRaffles,
-  customerTickets,
+  publicRaffles = [],
+  customerTickets = [],
   boardData,
   loading,
   onOpenBoard,
@@ -44,8 +44,11 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
   const [buyerEmail, setBuyerEmail] = useState(currentUser?.email || '');
   const [buyerPhone, setBuyerPhone] = useState(currentUser?.phone || '');
 
+  const safeCustomerTickets = Array.isArray(customerTickets) ? customerTickets : [];
+  const safePublicRaffles = Array.isArray(publicRaffles) ? publicRaffles : [];
+
   // Agrupar los boletos del cliente por Rifa (soporta múltiples boletos por rifa y múltiples rifas)
-  const ticketsGroupedByRaffle = customerTickets.reduce((acc: Record<string, any>, item: any) => {
+  const ticketsGroupedByRaffle = safeCustomerTickets.reduce((acc: Record<string, any>, item: any) => {
     if (!acc[item.raffle_id]) {
       acc[item.raffle_id] = {
         raffle_id: item.raffle_id,
@@ -122,7 +125,7 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
           }`}
         >
           <Ticket className="w-4 h-4 text-cosi-green" />
-          <span>Mis Rifas y Boletos ({customerTickets.length})</span>
+          <span>Mis Rifas y Boletos ({safeCustomerTickets.length})</span>
         </button>
 
         <button
@@ -138,7 +141,7 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
           }`}
         >
           <Sparkles className="w-4 h-4 text-cosi-yellow" />
-          <span>Explorar Rifas Activas ({publicRaffles.length})</span>
+          <span>Explorar Rifas Activas ({safePublicRaffles.length})</span>
         </button>
       </div>
 
@@ -189,7 +192,7 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-cosi-purple" />
-                          Sorteo: {group.draw_date.split('T')[0]}
+                          Sorteo: {group.draw_date?.split('T')[0]}
                         </span>
                       </p>
                     </div>
@@ -230,11 +233,12 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
                       const isWinner =
                         isFinished &&
                         group.winning_number &&
+                        Array.isArray(t.numbers) &&
                         t.numbers.includes(group.winning_number);
 
                       return (
                         <div
-                          key={t.purchase_id}
+                          key={t.purchase_id || t.ticket_id}
                           className={`cosi-card-subtle p-4 rounded-xl border space-y-3 ${
                             isWinner
                               ? 'border-cosi-yellow bg-cosi-yellow/10'
@@ -260,7 +264,7 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
                             <div>
                               <span className="text-[10px] text-slate-400 block font-sans">Números:</span>
                               <span className="text-base font-extrabold text-cosi-yellow">
-                                {t.numbers.join(' - ')}
+                                {Array.isArray(t.numbers) ? t.numbers.join(' - ') : ''}
                               </span>
                             </div>
                             <div className="text-right">
@@ -313,12 +317,12 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
         <div className="space-y-6">
           {!boardData ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {publicRaffles.map((r) => (
+              {safePublicRaffles.map((r) => (
                 <div key={r.id} className="cosi-card p-5 flex flex-col justify-between space-y-4">
                   <div>
                     <div className="flex justify-between items-center text-xs mb-2">
                       <span className="font-mono text-cosi-green font-bold">
-                        ${r.ticket_price.toLocaleString()} COP
+                        ${Number(r.ticket_price).toLocaleString()} COP
                       </span>
                       <span className="px-2 py-0.5 rounded-full bg-cosi-yellow/20 text-cosi-yellow text-[10px] font-bold">
                         {r.numbers_per_ticket} Núm/Boleto
@@ -361,7 +365,7 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
               </div>
 
               <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                {boardData.board.map((item) => {
+                {(boardData.board || []).map((item) => {
                   const isAvail = item.status === 'AVAILABLE';
                   const isSel = selectedTicket?.ticket_id === item.ticket_id;
                   return (
@@ -451,7 +455,7 @@ export const CustomerPortalView: React.FC<CustomerPortalViewProps> = ({
             </div>
 
             <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-              {boardData.board.map((item) => {
+              {(boardData.board || []).map((item) => {
                 const isAvail = item.status === 'AVAILABLE';
                 return (
                   <div
