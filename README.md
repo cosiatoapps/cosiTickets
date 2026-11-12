@@ -359,3 +359,27 @@ flowchart TB
 <p align="center">
   Desarrollado por <strong>cosiatoApps</strong> • Arquitectura MVC + Docker + FastAPI + React + PostgreSQL 16
 </p>
+
+---
+
+<!-- AUTO-STATUS:START -->
+> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 17:13`
+
+### 📊 Estado de Módulos Backend (Auto-generado por `deploy_agent.py`)
+
+| Módulo Router | Archivo | Endpoints Activos |
+| :--- | :--- | :---: |
+| **Admin** | `app/routers/admin_router.py` | `7` |
+| **Auth** | `app/routers/auth_router.py` | `2` |
+| **Customer** | `app/routers/customer_router.py` | `5` |
+| **Organizer** | `app/routers/organizer_router.py` | `7` |
+| **System** | `app/routers/system_router.py` | `3` |
+| **Total API REST** | **5 Routers Modulares** | **`24`** |
+<!-- AUTO-STATUS:END -->
+
+## 🚀 Historial de Despliegues Verificados
+
+<!-- AUTO-DEPLOY-LOG:START -->
+- **`v2.1.1`** (`2026-11-12 17:13` · `develop`): fix(board): importar RaffleDesign y PaymentTransaction en CustomerController
+- **`v2.1.1`** (`2026-11-12 17:10` · `develop`): docs(readme): automatizar actualizacion de metricas y changelog en deploy_agent
+<!-- AUTO-DEPLOY-LOG:END -->
