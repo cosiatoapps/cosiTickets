@@ -165,8 +165,12 @@ class OrganizerController:
             raise HTTPException(status_code=404, detail="Boleto no encontrado.")
 
         raffle = db.query(Raffle).filter(Raffle.id == ticket.raffle_id).first()
+        if payload.organizer_id and str(raffle.organizer_id) != str(payload.organizer_id):
+            raise HTTPException(status_code=403, detail="No tienes permisos para modificar boletos de esta rifa.")
+
         purchase = db.query(CustomerPurchase).filter(CustomerPurchase.ticket_id == ticket.id).first()
 
+        # Liberar boleto a Disponible
         if payload.payment_status == "AVAILABLE":
             ticket.status = "AVAILABLE"
             if purchase:
@@ -207,27 +211,31 @@ class OrganizerController:
         else:
             purchase.customer_id = customer.id
 
+        amount = float(payload.amount_paid or 0.0)
         ticket.status = payload.payment_status
-        purchase.balance_paid = payload.amount_paid
-        purchase.payment_status = (
-            "PAID"
-            if payload.payment_status == "PAID" or payload.amount_paid >= float(purchase.total_amount)
-            else ("PARTIAL_PAYMENT" if payload.amount_paid > 0 else "PENDING")
-        )
+        purchase.balance_paid = amount
 
-        if payload.amount_paid > 0:
+        if payload.payment_status == "PAID" or amount >= float(purchase.total_amount):
+            purchase.payment_status = "PAID"
+        elif amount > 0:
+            purchase.payment_status = "PARTIAL_PAYMENT"
+        else:
+            purchase.payment_status = "PENDING"
+
+        # Solo registra transacción financiera si hubo abono/pago > 0
+        if amount > 0:
             db.add(
                 PaymentTransaction(
                     purchase_id=purchase.id,
-                    amount=payload.amount_paid,
+                    amount=amount,
                     payment_method=payload.payment_method_code or "CASH",
-                    reference_number=payload.notes,
-                    recorded_by=payload.organizer_id,
+                    notes=payload.notes,
+                    recorded_by=payload.organizer_id or raffle.organizer_id,
                 )
             )
 
         db.commit()
-        return {"message": "Boleto y pago actualizados correctamente."}
+        return {"message": "Boleto, cliente y estado de pago actualizados correctamente."}
 
     @staticmethod
     def get_notifications(organizer_id: UUID, db: Session) -> list[dict]:

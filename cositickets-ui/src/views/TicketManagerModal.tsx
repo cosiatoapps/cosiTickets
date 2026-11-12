@@ -5,49 +5,62 @@ import { BoardItem, PaymentMethod } from '../models/types';
 interface TicketManagerModalProps {
   ticket: BoardItem;
   paymentMethods: PaymentMethod[];
-  rafflePrice: number;
+  ticketPrice: number;
   loading: boolean;
   onClose: () => void;
-  onSave: (ticketId: string, payload: any) => Promise<void>;
+  onSave: (payload: any) => Promise<void>;
 }
 
 export const TicketManagerModal: React.FC<TicketManagerModalProps> = ({
   ticket,
   paymentMethods,
-  rafflePrice,
+  ticketPrice,
   loading,
   onClose,
-  onSave
+  onSave,
 }) => {
   const [custName, setCustName] = useState(ticket.customer_name || '');
   const [custEmail, setCustEmail] = useState(ticket.customer_email || '');
   const [custPhone, setCustPhone] = useState(ticket.customer_phone || '');
-  const [status, setStatus] = useState<'AVAILABLE' | 'RESERVED' | 'PAID'>(ticket.status);
-  const [amountPaid, setAmountPaid] = useState<number>(ticket.amount_paid || (ticket.status === 'PAID' ? rafflePrice : 0));
-  const [payMethod, setPayMethod] = useState('CASH');
+  const [status, setStatus] = useState<'AVAILABLE' | 'RESERVED' | 'PAID'>(
+    ticket.status === 'AVAILABLE' ? 'RESERVED' : ticket.status
+  );
+  const [amountPaidInput, setAmountPaidInput] = useState<string>(
+    ticket.amount_paid && ticket.amount_paid > 0
+      ? String(ticket.amount_paid)
+      : ticket.status === 'PAID'
+      ? String(ticketPrice)
+      : ''
+  );
+  const [payMethod, setPayMethod] = useState<string>('');
   const [notes, setNotes] = useState(ticket.notes || '');
+
+  const safePaymentMethods =
+    Array.isArray(paymentMethods) && paymentMethods.length > 0
+      ? paymentMethods
+      : [
+          { id: '1', code: 'CASH', name: 'Efectivo' },
+          { id: '2', code: 'BANK_TRANSFER', name: 'Transferencia Bancaria' },
+          { id: '3', code: 'NEQUI', name: 'Nequi' },
+          { id: '4', code: 'DAVIPLATA', name: 'Daviplata' },
+        ];
+
+  const numericAmount = amountPaidInput.trim() === '' ? 0.0 : Number(amountPaidInput);
+  const isPaymentMethodOptional =
+    status === 'AVAILABLE' || (status === 'RESERVED' && numericAmount === 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(ticket.ticket_id, {
-      customer_name: custName,
-      customer_email: custEmail,
-      customer_phone: custPhone,
+    onSave({
+      customer_name: custName.trim() || null,
+      customer_email: custEmail.trim() || null,
+      customer_phone: custPhone.trim() || null,
       payment_status: status,
-      amount_paid: Number(amountPaid),
-      payment_method_code: payMethod,
-      notes
+      amount_paid: numericAmount,
+      payment_method_code: payMethod || null,
+      notes: notes.trim() || null,
     });
   };
-
-  const safePaymentMethods = Array.isArray(paymentMethods) && paymentMethods.length > 0
-  ? paymentMethods
-  : [
-      { id: '1', code: 'CASH', name: 'Efectivo' },
-      { id: '2', code: 'BANK_TRANSFER', name: 'Transferencia Bancaria' },
-      { id: '3', code: 'NEQUI', name: 'Nequi' },
-      { id: '4', code: 'DAVIPLATA', name: 'Daviplata' },
-    ];
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
@@ -57,7 +70,9 @@ export const TicketManagerModal: React.FC<TicketManagerModalProps> = ({
             <Edit3 className="w-4 h-4 text-cosi-yellow" />
             <span>Gestionar Boleto #{ticket.numbers.join(', ')}</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white font-bold">✕</button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white font-bold">
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,36 +132,53 @@ export const TicketManagerModal: React.FC<TicketManagerModalProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Monto Abonado ($)</label>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Monto Abonado ($) <span className="text-slate-500 font-normal">(Opcional: 0)</span>
+                </label>
                 <input
                   type="number"
                   min="0"
-                  value={amountPaid}
-                  onChange={(e) => setAmountPaid(Number(e.target.value))}
+                  step="any"
+                  placeholder="0"
+                  value={amountPaidInput}
+                  onChange={(e) => setAmountPaidInput(e.target.value)}
                   className="w-full px-3 py-1.5 cosi-input text-xs font-mono font-bold text-cosi-green"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Forma de Pago</label>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                Forma de Pago{' '}
+                {isPaymentMethodOptional ? (
+                  <span className="text-slate-500 font-normal">(Opcional si apartado en $0)</span>
+                ) : (
+                  <span className="text-cosi-rose font-normal">*</span>
+                )}
+              </label>
               <select
+                required={!isPaymentMethodOptional}
                 value={payMethod}
                 onChange={(e) => setPayMethod(e.target.value)}
                 className="w-full px-3 py-1.5 cosi-input text-xs"
               >
+                <option value="">-- Seleccionar forma de pago --</option>
                 {safePaymentMethods.map((m) => (
-                  <option key={m.code} value={m.code}>{m.name}</option>
+                  <option key={m.code} value={m.code}>
+                    {m.name}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
 
           <div className="pt-2 border-t border-white/5">
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1">Observaciones / Notas</label>
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              Observaciones / Notas <span className="text-slate-500 font-normal">(Opcional)</span>
+            </label>
             <textarea
               rows={2}
-              placeholder="Ej. Abonó 20.000 en efectivo, cancela el saldo el viernes..."
+              placeholder="Ej. Apartado por WhatsApp, paga el viernes..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3 py-1.5 cosi-input text-xs"
@@ -161,11 +193,7 @@ export const TicketManagerModal: React.FC<TicketManagerModalProps> = ({
             >
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-2 cosi-btn-purple text-xs"
-            >
+            <button type="submit" disabled={loading} className="flex-1 py-2 cosi-btn-purple text-xs">
               {loading ? 'Guardando...' : 'Actualizar Boleto'}
             </button>
           </div>
