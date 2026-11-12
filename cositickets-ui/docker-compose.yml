@@ -1,0 +1,48 @@
+services:
+  # 1. API Backend FastAPI
+  api:
+    build: 
+      context: ../cositickets-api
+      dockerfile: Dockerfile
+    container_name: cositickets_api
+    restart: always
+    env_file:
+      - ../cositickets-api/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../cositickets-api:/app
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${DB_USER:-devuser}:${DB_PASSWORD:-devpassword}@host.docker.internal:5432/${DB_NAME:-cositickets_dev}
+      SECRET_KEY: ${SECRET_KEY:-dev_super_secret_key_change_in_prod}
+      ENVIRONMENT: local
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_PRIMARY_IMAGE_MODEL: ${GEMINI_PRIMARY_IMAGE_MODEL:-imagen-3.0-generate-002}
+      GEMINI_FALLBACK_MODEL_1: ${GEMINI_FALLBACK_MODEL_1:-imagen-3.0-fast-generate-001}
+      GEMINI_FALLBACK_MODEL_2: ${GEMINI_FALLBACK_MODEL_2:-imagen-2.0-generate-001}
+      GEMINI_FALLBACK_MODEL_3: ${GEMINI_FALLBACK_MODEL_3:-imagen-3.0-capability-001}
+      IMAGE_GEN_MAX_RETRIES_PER_MODEL: ${IMAGE_GEN_MAX_RETRIES_PER_MODEL:-2}
+      IMAGE_GEN_RETRY_DELAY_SECONDS: ${IMAGE_GEN_RETRY_DELAY_SECONDS:-2}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - cositickets_network
+
+  # 2. Frontend React + Vite + Nginx
+  web:
+    build:
+      context: ../cositickets-ui
+      dockerfile: Dockerfile
+    container_name: cositickets_ui
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - cositickets_network
+
+networks:
+  cositickets_network:
+    name: cositickets_network
+    driver: bridge

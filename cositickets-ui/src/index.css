@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color-scheme: dark;
+  
+  /* Paleta Oficial CosiTickets */
+  --cosi-black: #05070E;
+  --cosi-dark-card: #0D111D;
+  --cosi-yellow: #FACC15;       /* Amarillo Neón / Warning / Acento */
+  --cosi-green: #10B981;        /* Verde Esmeralda / Recaudo / Éxito */
+  --cosi-purple: #8B5CF6;       /* Púrpura Eléctrico / Primario */
+  --cosi-purple-hover: #7C3AED;
+  --cosi-cyan: #06B6D4;         /* Cyan / Sub-acento */
+  --cosi-rose: #F43F5E;         /* Puestos Pagados */
+}
+
+html {
+  font-size: 18px;
+}
+
+body {
+  margin: 0;
+  background-color: var(--cosi-black);
+  color: #F3F4F6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Efectos Glass y Tarjetas CosiTickets */
+.cosi-card {
+  background: rgba(13, 17, 29, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.cosi-card-subtle {
+  background: rgba(19, 24, 38, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+/* Botones con Acentos Púrpura, Verde y Amarillo */
+.cosi-btn-purple {
+  background-color: var(--cosi-purple);
+  color: #FFFFFF;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.cosi-btn-purple:hover {
+  background-color: var(--cosi-purple-hover);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.cosi-btn-yellow {
+  background-color: var(--cosi-yellow);
+  color: #05070E;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3);
+}
+
+.cosi-btn-yellow:hover {
+  background-color: #EAB308;
+  box-shadow: 0 6px 20px rgba(250, 204, 21, 0.5);
+  transform: translateY(-1px);
+}
+
+.cosi-btn-green {
+  background-color: var(--cosi-green);
+  color: #FFFFFF;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.cosi-btn-green:hover {
+  background-color: #059669;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+/* Inputs de Formulario */
+.cosi-input {
+  background-color: rgba(9, 12, 22, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #FFFFFF;
+  transition: all 0.15s ease-in-out;
+}
+
+.cosi-input:focus {
+  outline: none;
+  border-color: var(--cosi-purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
+}
+
+/* Tablas Institucionales de CosiTickets (+2px en cabecera) */
+.cosi-table th {
+  background-color: #090C16;
+  color: #9CA3AF;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cosi-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cosi-table tr:hover td {
+  background-color: rgba(139, 92, 246, 0.04);
+}
+
+/* Scrollbar Personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #05070E;
+}
+::-webkit-scrollbar-thumb {
+  background: #1F2937;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}

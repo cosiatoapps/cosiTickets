@@ -1,0 +1,167 @@
+import React, { useState } from 'react';
+import { Edit3 } from 'lucide-react';
+import { BoardItem, PaymentMethod } from '../models/types';
+
+interface TicketManagerModalProps {
+  ticket: BoardItem;
+  paymentMethods: PaymentMethod[];
+  rafflePrice: number;
+  loading: boolean;
+  onClose: () => void;
+  onSave: (ticketId: string, payload: any) => Promise<void>;
+}
+
+export const TicketManagerModal: React.FC<TicketManagerModalProps> = ({
+  ticket,
+  paymentMethods,
+  rafflePrice,
+  loading,
+  onClose,
+  onSave
+}) => {
+  const [custName, setCustName] = useState(ticket.customer_name || '');
+  const [custEmail, setCustEmail] = useState(ticket.customer_email || '');
+  const [custPhone, setCustPhone] = useState(ticket.customer_phone || '');
+  const [status, setStatus] = useState<'AVAILABLE' | 'RESERVED' | 'PAID'>(ticket.status);
+  const [amountPaid, setAmountPaid] = useState<number>(ticket.amount_paid || (ticket.status === 'PAID' ? rafflePrice : 0));
+  const [payMethod, setPayMethod] = useState('CASH');
+  const [notes, setNotes] = useState(ticket.notes || '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(ticket.ticket_id, {
+      customer_name: custName,
+      customer_email: custEmail,
+      customer_phone: custPhone,
+      payment_status: status,
+      amount_paid: Number(amountPaid),
+      payment_method_code: payMethod,
+      notes
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="cosi-card p-6 max-w-lg w-full space-y-4">
+        <div className="flex justify-between items-center border-b border-white/10 pb-3">
+          <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+            <Edit3 className="w-4 h-4 text-cosi-yellow" />
+            <span>Gestionar Boleto #{ticket.numbers.join(', ')}</span>
+          </h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white font-bold">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <span className="text-xs font-bold text-cosi-yellow uppercase tracking-wider block">
+              1. Información del Comprador
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Nombre Completo</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Andrés Ramírez"
+                  value={custName}
+                  onChange={(e) => setCustName(e.target.value)}
+                  className="w-full px-3 py-1.5 cosi-input text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Teléfono Móvil</label>
+                <input
+                  type="tel"
+                  placeholder="+57 300 000 0000"
+                  value={custPhone}
+                  onChange={(e) => setCustPhone(e.target.value)}
+                  className="w-full px-3 py-1.5 cosi-input text-xs"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Correo Electrónico</label>
+              <input
+                type="email"
+                placeholder="cliente@ejemplo.com"
+                value={custEmail}
+                onChange={(e) => setCustEmail(e.target.value)}
+                className="w-full px-3 py-1.5 cosi-input text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            <span className="text-xs font-bold text-cosi-green uppercase tracking-wider block">
+              2. Estado del Boleto y Finanzas
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Estado de Pago</label>
+                <select
+                  value={status}
+                  onChange={(e: any) => setStatus(e.target.value)}
+                  className="w-full px-3 py-1.5 cosi-input text-xs font-bold"
+                >
+                  <option value="AVAILABLE">Libre / Disponible</option>
+                  <option value="RESERVED">Abonado / Apartado</option>
+                  <option value="PAID">Pagado Totalmente</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Monto Abonado ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(Number(e.target.value))}
+                  className="w-full px-3 py-1.5 cosi-input text-xs font-mono font-bold text-cosi-green"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Forma de Pago</label>
+              <select
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value)}
+                className="w-full px-3 py-1.5 cosi-input text-xs"
+              >
+                {paymentMethods.map((m) => (
+                  <option key={m.code} value={m.code}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-white/5">
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1">Observaciones / Notas</label>
+            <textarea
+              rows={2}
+              placeholder="Ej. Abonó 20.000 en efectivo, cancela el saldo el viernes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full px-3 py-1.5 cosi-input text-xs"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-700"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-2 cosi-btn-purple text-xs"
+            >
+              {loading ? 'Guardando...' : 'Actualizar Boleto'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
