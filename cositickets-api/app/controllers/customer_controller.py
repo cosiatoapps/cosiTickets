@@ -4,10 +4,19 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select, and_
 
-from app.models.domain import Raffle, Ticket, TicketNumber, CustomerPurchase, Notification, User
 from app.schemas.ticket import PublicReserveRequest, SwapTicketRequest
 from app.core.security import hash_password
 
+from app.models import (
+    Raffle,
+    RaffleDesign,
+    Ticket,
+    TicketNumber,
+    CustomerPurchase,
+    PaymentTransaction,
+    Notification,
+    User,
+)
 
 class CustomerController:
 
