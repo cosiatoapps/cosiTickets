@@ -31,3 +31,4 @@ app.include_router(admin_router.router, prefix="/api/v1/admin", tags=["Administr
 app.include_router(organizer_router.router, prefix="/api/v1/organizer", tags=["Organizador / Manager"])
 app.include_router(customer_router.router, prefix="/api/v1", tags=["Portal Cliente & Tablero Público"])
 app.include_router(system_router.router, prefix="/api/v1/system", tags=["Sistema & Health"])
+app.include_router(system_router.router, prefix="/api/v1", tags=["Compatibilidad Sistema"])

@@ -144,3 +144,99 @@ class CustomerController:
 
         db.commit()
         return {"message": "Cambio de número realizado con éxito.", "new_numbers": new_nums}
+
+    @staticmethod
+    def get_raffle_board(raffle_id: UUID, db: Session) -> dict:
+        """Retorna el estado completo del tablero, métricas, diseño y datos de compradores por boleto."""
+        raffle = db.query(Raffle).filter(Raffle.id == raffle_id).first()
+        if not raffle:
+            raise HTTPException(status_code=404, detail="Rifa no encontrada.")
+
+        design = db.query(RaffleDesign).filter(RaffleDesign.raffle_id == raffle_id).first()
+        tickets = (
+            db.query(Ticket)
+            .filter(Ticket.raffle_id == raffle_id)
+            .order_by(Ticket.ticket_code.asc())
+            .all()
+        )
+
+        board_items = []
+        paid_count = 0
+        reserved_count = 0
+        available_count = 0
+
+        for t in tickets:
+            status_str = t.status.value if hasattr(t.status, "value") else str(t.status)
+            if status_str == "PAID":
+                paid_count += 1
+            elif status_str == "RESERVED":
+                reserved_count += 1
+            else:
+                available_count += 1
+
+            nums = [
+                tn.number_value
+                for tn in db.query(TicketNumber)
+                .filter(TicketNumber.ticket_id == t.id)
+                .order_by(TicketNumber.number_value.asc())
+                .all()
+            ]
+
+            purchase = db.query(CustomerPurchase).filter(CustomerPurchase.ticket_id == t.id).first()
+            buyer = (
+                db.query(User).filter(User.id == purchase.customer_id).first()
+                if purchase
+                else None
+            )
+            last_tx = (
+                db.query(PaymentTransaction)
+                .filter(PaymentTransaction.purchase_id == purchase.id)
+                .order_by(PaymentTransaction.payment_date.desc())
+                .first()
+                if purchase
+                else None
+            )
+
+            board_items.append({
+                "ticket_id": str(t.id),
+                "ticket_code": t.ticket_code,
+                "status": status_str,
+                "numbers": nums,
+                "customer_name": buyer.name if buyer else None,
+                "customer_email": buyer.email if buyer else None,
+                "customer_phone": buyer.phone if buyer else None,
+                "amount_paid": float(purchase.balance_paid) if purchase else 0.0,
+                "payment_method_code": last_tx.payment_method if last_tx else "CASH",
+                "notes": last_tx.reference_number if last_tx else None,
+            })
+
+        total_tickets = len(tickets)
+        sold_or_reserved = paid_count + reserved_count
+
+        return {
+            "id": str(raffle.id),
+            "raffle_id": str(raffle.id),
+            "title": raffle.title,
+            "description": raffle.description,
+            "prize_name": raffle.prize_name,
+            "ticket_price": float(raffle.ticket_price),
+            "numbers_per_ticket": raffle.numbers_per_ticket,
+            "draw_date": raffle.draw_date.isoformat() if raffle.draw_date else None,
+            "status": raffle.status.value if hasattr(raffle.status, "value") else str(raffle.status),
+            "design": {
+                "primary_color": design.primary_color if design else "#4F46E5",
+                "secondary_color": design.secondary_color if design else "#06B6D4",
+                "background_image_url": design.background_image_url if design else None,
+                "ticket_template_url": design.ticket_template_url if design else None,
+            },
+            "stats": {
+                "total": total_tickets,
+                "sold": paid_count,
+                "reserved": reserved_count,
+                "available": available_count,
+                "percentage_sold": round((sold_or_reserved / total_tickets * 100), 1)
+                if total_tickets > 0
+                else 0,
+            },
+            "board": board_items,
+        }

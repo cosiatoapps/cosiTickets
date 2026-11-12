@@ -40,6 +40,15 @@ export const TicketManagerModal: React.FC<TicketManagerModalProps> = ({
     });
   };
 
+  const safePaymentMethods = Array.isArray(paymentMethods) && paymentMethods.length > 0
+  ? paymentMethods
+  : [
+      { id: '1', code: 'CASH', name: 'Efectivo' },
+      { id: '2', code: 'BANK_TRANSFER', name: 'Transferencia Bancaria' },
+      { id: '3', code: 'NEQUI', name: 'Nequi' },
+      { id: '4', code: 'DAVIPLATA', name: 'Daviplata' },
+    ];
+
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
       <div className="cosi-card p-6 max-w-lg w-full space-y-4">
@@ -126,7 +135,7 @@ export const TicketManagerModal: React.FC<TicketManagerModalProps> = ({
                 onChange={(e) => setPayMethod(e.target.value)}
                 className="w-full px-3 py-1.5 cosi-input text-xs"
               >
-                {paymentMethods.map((m) => (
+                {safePaymentMethods.map((m) => (
                   <option key={m.code} value={m.code}>{m.name}</option>
                 ))}
               </select>

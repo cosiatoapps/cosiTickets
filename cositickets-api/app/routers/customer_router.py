@@ -23,3 +23,7 @@ def swap_ticket(payload: SwapTicketRequest, db: Session = Depends(get_db)):
 @router.get("/portal/my-tickets/{customer_id}")
 def my_tickets(customer_id: UUID, db: Session = Depends(get_db)):
     return CustomerController.get_customer_tickets(customer_id, db)
+
+@router.get("/raffles/{raffle_id}/board")
+def get_board(raffle_id: UUID, db: Session = Depends(get_db)):
+    return CustomerController.get_raffle_board(raffle_id, db)
