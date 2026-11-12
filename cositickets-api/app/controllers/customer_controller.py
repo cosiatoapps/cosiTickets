@@ -249,3 +249,109 @@ class CustomerController:
             },
             "board": board_items,
         }
+
+    @staticmethod
+    def get_customer_tickets(customer_id: UUID, db: Session) -> dict:
+        """Retorna todos los boletos del cliente en rifas activas y finalizadas (con número ganador)."""
+        purchases = (
+            db.query(CustomerPurchase)
+            .filter(CustomerPurchase.customer_id == customer_id)
+            .order_by(CustomerPurchase.created_at.desc())
+            .all()
+        )
+        results = []
+
+        for p in purchases:
+            ticket = db.query(Ticket).filter(Ticket.id == p.ticket_id).first()
+            raffle = db.query(Raffle).filter(Raffle.id == p.raffle_id).first()
+            if not ticket or not raffle:
+                continue
+
+            numbers = [
+                tn.number_value
+                for tn in db.query(TicketNumber)
+                .filter(TicketNumber.ticket_id == ticket.id)
+                .order_by(TicketNumber.number_value.asc())
+                .all()
+            ]
+            raffle_status_str = raffle.status.value if hasattr(raffle.status, "value") else str(raffle.status)
+            pay_status_str = p.payment_status.value if hasattr(p.payment_status, "value") else str(p.payment_status)
+
+            results.append({
+                "purchase_id": str(p.id),
+                "raffle_id": str(raffle.id),
+                "ticket_id": str(ticket.id),
+                "ticket_code": ticket.ticket_code,
+                "numbers": numbers,
+                "payment_status": pay_status_str,
+                "balance_paid": float(p.balance_paid),
+                "total_amount": float(p.total_amount),
+                "draw_date": raffle.draw_date.isoformat(),
+                "raffle_title": raffle.title,
+                "prize_name": raffle.prize_name,
+                "raffle_status": raffle_status_str,
+                "winning_number": raffle.winning_number,
+            })
+
+        return {"customer_id": str(customer_id), "total_tickets": len(results), "tickets": results}
+
+    @staticmethod
+    def swap_ticket(payload: SwapTicketRequest, db: Session) -> dict:
+        """Cambio de número por el cliente: bloqueado si la rifa finalizó o faltan < 24h."""
+        purchase = db.query(CustomerPurchase).filter(
+            and_(
+                CustomerPurchase.ticket_id == payload.current_ticket_id,
+                CustomerPurchase.customer_id == payload.customer_id,
+            )
+        ).first()
+
+        if not purchase:
+            raise HTTPException(status_code=404, detail="No se encontró la compra asociada a tu usuario.")
+
+        raffle = db.query(Raffle).filter(Raffle.id == purchase.raffle_id).first()
+        if not raffle:
+            raise HTTPException(status_code=404, detail="Rifa no encontrada.")
+
+        raffle_status = raffle.status.value if hasattr(raffle.status, "value") else str(raffle.status)
+        if raffle_status != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Esta rifa ya finalizó o no está activa. No es posible realizar cambios.",
+            )
+
+        if purchase.payment_status == "PAID":
+            raise HTTPException(status_code=400, detail="Los boletos pagados no pueden cambiarse desde el portal.")
+
+        now_utc = datetime.now(timezone.utc)
+        draw_utc = raffle.draw_date if raffle.draw_date.tzinfo else raffle.draw_date.replace(tzinfo=timezone.utc)
+
+        if (draw_utc - now_utc) < timedelta(hours=24):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El cambio de número solo está permitido hasta 24 horas antes del sorteo.",
+            )
+
+        old_ticket = db.execute(select(Ticket).where(Ticket.id == payload.current_ticket_id).with_for_update()).scalar_one_or_none()
+        new_ticket = db.execute(select(Ticket).where(Ticket.id == payload.new_ticket_id).with_for_update()).scalar_one_or_none()
+
+        if not new_ticket or new_ticket.status != "AVAILABLE" or new_ticket.raffle_id != raffle.id:
+            raise HTTPException(status_code=409, detail="El nuevo número seleccionado ya no está disponible.")
+
+        old_nums = [n.number_value for n in db.query(TicketNumber).filter(TicketNumber.ticket_id == old_ticket.id).all()]
+        new_nums = [n.number_value for n in db.query(TicketNumber).filter(TicketNumber.ticket_id == new_ticket.id).all()]
+
+        old_ticket.status = "AVAILABLE"
+        new_ticket.status = "RESERVED"
+        purchase.ticket_id = new_ticket.id
+
+        customer = db.query(User).filter(User.id == payload.customer_id).first()
+        db.add(Notification(
+            user_id=raffle.organizer_id,
+            title=f"Cambio de número en '{raffle.title}'",
+            message=f"El cliente {customer.name} cambió [{', '.join(old_nums)}] por [{', '.join(new_nums)}].",
+            notification_type="NUMBER_CHANGE",
+            metadata_info={"raffle_id": str(raffle.id), "old_numbers": old_nums, "new_numbers": new_nums},
+        ))
+
+        db.commit()
+        return {"message": "Cambio de número realizado con éxito.", "new_numbers": new_nums}

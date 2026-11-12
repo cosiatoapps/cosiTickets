@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   Ticket, Users, Layers, LogOut, CheckCircle2, AlertCircle,
-  TrendingUp, ShieldCheck, Sparkles, Search, UserX, UserCheck,
+  TrendingUp, ShieldCheck, Search, UserX, UserCheck,
   Calendar, Grid, Edit3, Bell
 } from 'lucide-react';
 import { useCosiController } from './controllers/useCosiController';
 import { AuthView } from './views/AuthView';
 import { BoardModal } from './views/BoardModal';
 import { TicketManagerModal } from './views/TicketManagerModal';
+import { CustomerPortalView } from './views/CustomerPortalView';
 
 export default function App() {
   const cosi = useCosiController();
@@ -35,6 +36,7 @@ export default function App() {
 
   const isAdmin = cosi.currentUser.role === 'ADMIN';
   const isOrganizer = cosi.currentUser.role === 'ORGANIZER';
+  const isCustomer = cosi.currentUser.role === 'CUSTOMER';
 
   const filteredUsers = cosi.allUsers.filter((u) => {
     const matchesRole = cosi.roleFilter === 'ALL' || u.role === cosi.roleFilter;
@@ -78,6 +80,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#05070E] text-slate-100 flex flex-col selection:bg-cosi-purple selection:text-white">
+      {/* HEADER INSTITUCIONAL */}
       <header className="px-6 py-3.5 border-b border-white/5 bg-[#090C16]/90 backdrop-blur-md flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cosi-purple to-cosi-cyan flex items-center justify-center text-white font-extrabold shadow-lg shadow-cosi-purple/20">
@@ -86,57 +89,70 @@ export default function App() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-lg text-white tracking-tight">CosiTickets</span>
-              <span className="bg-cosi-purple/20 border border-cosi-purple/40 text-cosi-purple px-2 py-0.5 rounded-full text-[10px] font-mono font-bold">
-                {isAdmin ? 'ADMINISTRADOR GENERAL' : isOrganizer ? 'RESPONSABLE DE RIFA' : 'CLIENTE'}
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                  isAdmin
+                    ? 'bg-cosi-purple/20 border-cosi-purple/40 text-cosi-purple'
+                    : isOrganizer
+                    ? 'bg-cosi-yellow/20 border-cosi-yellow/40 text-cosi-yellow'
+                    : 'bg-cosi-green/20 border-cosi-green/40 text-cosi-green'
+                }`}
+              >
+                {isAdmin ? 'ADMINISTRADOR GENERAL' : isOrganizer ? 'RESPONSABLE DE RIFA' : 'PORTAL CLIENTE'}
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
               {isAdmin
                 ? 'Panel Central de Control, Supervisión y Auditoría'
-                : 'Gestión Operativa de Rifas, Tableros y Pagos'}
+                : isOrganizer
+                ? 'Gestión Operativa de Rifas, Tableros y Pagos'
+                : 'Consulta tus boletos, participa en rifas activas y revisa resultados'}
             </p>
           </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-1.5 bg-[#0D111D] p-1 rounded-xl border border-white/5">
-          <button
-            onClick={() => cosi.setActiveTab('overview')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
-              cosi.activeTab === 'overview'
-                ? 'bg-cosi-purple text-white shadow-md shadow-cosi-purple/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            {isAdmin ? 'Dashboard' : 'Mis Rifas'}
-          </button>
+        {/* NAVEGACIÓN POR ROL (RBAC) */}
+        {!isCustomer && (
+          <nav className="hidden md:flex items-center gap-1.5 bg-[#0D111D] p-1 rounded-xl border border-white/5">
+            <button
+              onClick={() => cosi.setActiveTab('overview')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                cosi.activeTab === 'overview'
+                  ? 'bg-cosi-purple text-white shadow-md shadow-cosi-purple/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isAdmin ? 'Dashboard' : 'Mis Rifas'}
+            </button>
 
-          {isAdmin && (
-            <>
-              <button
-                onClick={() => cosi.setActiveTab('users')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  cosi.activeTab === 'users'
-                    ? 'bg-cosi-purple text-white shadow-md shadow-cosi-purple/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5 text-cosi-yellow" />
-                <span>Usuarios & Roles</span>
-              </button>
-              <button
-                onClick={() => cosi.setActiveTab('raffles_inspect')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
-                  cosi.activeTab === 'raffles_inspect'
-                    ? 'bg-cosi-purple text-white shadow-md shadow-cosi-purple/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5 text-cosi-green" />
-                <span>Rifas por Responsable</span>
-              </button>
-            </>
-          )}
-        </nav>
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => cosi.setActiveTab('users')}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                    cosi.activeTab === 'users'
+                      ? 'bg-cosi-purple text-white shadow-md shadow-cosi-purple/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5 text-cosi-yellow" />
+                  <span>Usuarios & Roles</span>
+                </button>
+                <button
+                  onClick={() => cosi.setActiveTab('raffles_inspect')}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                    cosi.activeTab === 'raffles_inspect'
+                      ? 'bg-cosi-purple text-white shadow-md shadow-cosi-purple/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-cosi-green" />
+                  <span>Rifas por Responsable</span>
+                </button>
+              </>
+            )}
+          </nav>
+        )}
 
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
@@ -153,6 +169,7 @@ export default function App() {
         </div>
       </header>
 
+      {/* CUERPO PRINCIPAL */}
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
         {cosi.alertMsg && (
           <div
@@ -176,7 +193,27 @@ export default function App() {
           </div>
         )}
 
-        {/* VISTA ORGANIZER: MIS RIFAS + ALERTAS */}
+        {/* =================================================================
+            1. VISTA CLIENTE: MÚLTIPLES BOLETOS, VARIAS RIFAS Y GANADORES
+           ================================================================= */}
+        {isCustomer && (
+          <CustomerPortalView
+            currentUser={cosi.currentUser}
+            publicRaffles={cosi.publicRaffles}
+            customerTickets={cosi.customerTickets}
+            boardData={cosi.selectedRaffleBoard}
+            loading={cosi.loading}
+            onOpenBoard={cosi.openBoardPreview}
+            onCloseBoard={() => cosi.setSelectedRaffleBoard(null)}
+            onReserveTicket={cosi.reserveCustomerTicket}
+            onSwapTicket={cosi.swapCustomerTicket}
+            onShowAlert={cosi.showAlert}
+          />
+        )}
+
+        {/* =================================================================
+            2. VISTA ORGANIZER: MIS RIFAS + ALERTAS
+           ================================================================= */}
         {isOrganizer && (
           <div className="space-y-6">
             {cosi.notifications.length > 0 && (
@@ -213,7 +250,7 @@ export default function App() {
               <div className="mb-5">
                 <h2 className="text-base font-extrabold text-white">Mis Rifas Asignadas</h2>
                 <p className="text-xs text-slate-400">
-                  Haz clic en "Gestionar Tablero" para administrar puestos, registrar abonos, pagos y datos de clientes.
+                  Haz clic en "Gestionar Tablero y Boletos" para administrar puestos, registrar abonos, pagos y datos de clientes.
                 </p>
               </div>
 
@@ -263,7 +300,9 @@ export default function App() {
           </div>
         )}
 
-        {/* VISTA ADMIN: OVERVIEW */}
+        {/* =================================================================
+            3. VISTA ADMIN: OVERVIEW
+           ================================================================= */}
         {isAdmin && cosi.activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -297,7 +336,9 @@ export default function App() {
           </div>
         )}
 
-        {/* VISTA ADMIN: USUARIOS RBAC */}
+        {/* =================================================================
+            4. VISTA ADMIN: USUARIOS RBAC
+           ================================================================= */}
         {isAdmin && cosi.activeTab === 'users' && (
           <div className="space-y-6">
             <div className="cosi-card p-6">
@@ -358,7 +399,11 @@ export default function App() {
                             onClick={() => cosi.toggleUserStatus(u.id, u.is_active)}
                             className="p-1.5 rounded-lg border border-white/10 hover:bg-white/10"
                           >
-                            {u.is_active ? <UserX className="w-3.5 h-3.5 text-cosi-rose" /> : <UserCheck className="w-3.5 h-3.5 text-cosi-green" />}
+                            {u.is_active ? (
+                              <UserX className="w-3.5 h-3.5 text-cosi-rose" />
+                            ) : (
+                              <UserCheck className="w-3.5 h-3.5 text-cosi-green" />
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -425,7 +470,9 @@ export default function App() {
           </div>
         )}
 
-        {/* VISTA ADMIN: RIFAS POR RESPONSABLE */}
+        {/* =================================================================
+            5. VISTA ADMIN: RIFAS POR RESPONSABLE
+           ================================================================= */}
         {isAdmin && cosi.activeTab === 'raffles_inspect' && (
           <div className="cosi-card p-6 space-y-6">
             <h2 className="text-base font-extrabold text-white">Supervisión e Inspección por Responsable</h2>
@@ -472,8 +519,10 @@ export default function App() {
           </div>
         )}
 
-        {/* MODALES */}
-        {cosi.selectedRaffleBoard && (
+        {/* =================================================================
+            MODALES GLOBALES (SOLO ADMIN Y ORGANIZER)
+           ================================================================= */}
+        {!isCustomer && cosi.selectedRaffleBoard && (
           <BoardModal
             boardData={cosi.selectedRaffleBoard}
             isOrganizer={isOrganizer}
@@ -482,7 +531,7 @@ export default function App() {
           />
         )}
 
-        {cosi.managingTicket && cosi.selectedRaffleBoard && (
+        {!isCustomer && cosi.managingTicket && cosi.selectedRaffleBoard && (
           <TicketManagerModal
             ticket={cosi.managingTicket}
             ticketPrice={cosi.selectedRaffleBoard.ticket_price}
@@ -493,7 +542,7 @@ export default function App() {
           />
         )}
 
-        {cosi.editingRaffle && (
+        {isAdmin && cosi.editingRaffle && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="cosi-card p-6 max-w-md w-full space-y-4">
               <h3 className="text-sm font-extrabold text-white">Modificar Fecha de Cierre (Auditoría)</h3>

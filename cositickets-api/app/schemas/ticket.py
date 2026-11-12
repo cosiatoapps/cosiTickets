@@ -76,6 +76,8 @@ class TicketResponse(BaseModel):
 
 
 class CustomerTicketItem(BaseModel):
+    purchase_id: UUID
+    raffle_id: UUID
     ticket_id: UUID
     ticket_code: str
     numbers: List[str]
@@ -84,6 +86,8 @@ class CustomerTicketItem(BaseModel):
     total_amount: float
     draw_date: datetime
     raffle_title: str
+    prize_name: str
+    raffle_status: str  # 'ACTIVE', 'COMPLETED', 'PAUSED', 'CANCELLED'
     winning_number: Optional[str] = None
 
 

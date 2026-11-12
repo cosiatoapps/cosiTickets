@@ -198,6 +198,67 @@ export function useCosiController() {
     }
   };
 
+  const [publicRaffles, setPublicRaffles] = useState<any[]>([]);
+  const [customerTickets, setCustomerTickets] = useState<any[]>([]);
+
+  const loadCustomerPortalData = async () => {
+    setLoading(true);
+    try {
+      const raffles = await CosiAPI.getPublicRaffles();
+      setPublicRaffles(raffles || []);
+      if (currentUser?.id) {
+        const res = await CosiAPI.getCustomerTickets(currentUser.id);
+        setCustomerTickets(res.tickets || []);
+      }
+    } catch (err: any) {
+      showAlert(err.message || 'Error cargando catálogo de rifas', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reserveCustomerTicket = async (payload: {
+    raffle_id: string;
+    ticket_id: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+  }) => {
+    setLoading(true);
+    try {
+      await CosiAPI.reservePublicTicket(payload);
+      showAlert('Boleto apartado con éxito. El responsable de la rifa fue notificado.');
+      await openBoardPreview(payload.raffle_id);
+      await loadCustomerPortalData();
+      return true;
+    } catch (err: any) {
+      showAlert(err.message || 'No se pudo apartar el boleto', 'error');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const swapCustomerTicket = async (currentTicketId: string, newTicketId: string) => {
+    if (!currentUser) return false;
+    setLoading(true);
+    try {
+      await CosiAPI.swapCustomerTicket({
+        current_ticket_id: currentTicketId,
+        new_ticket_id: newTicketId,
+        customer_id: currentUser.id,
+      });
+      showAlert('Cambio de número realizado y notificado al responsable.');
+      await loadCustomerPortalData();
+      return true;
+    } catch (err: any) {
+      showAlert(err.message || 'No se pudo cambiar el número', 'error');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     currentUser,
     activeTab,
@@ -229,5 +290,8 @@ export function useCosiController() {
     saveRaffleEdit,
     saveTicketDetails,
     showAlert,
+    loadCustomerPortalData, 
+    reserveCustomerTicket, 
+    swapCustomerTicket, 
   };
 }
