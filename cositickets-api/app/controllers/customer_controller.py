@@ -200,7 +200,7 @@ class CustomerController:
             last_tx = (
                 db.query(PaymentTransaction)
                 .filter(PaymentTransaction.purchase_id == purchase.id)
-                .order_by(PaymentTransaction.payment_date.desc())
+                .order_by(PaymentTransaction.created_at.desc())
                 .first()
                 if purchase
                 else None
