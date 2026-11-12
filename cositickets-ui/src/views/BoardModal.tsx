@@ -9,6 +9,7 @@ interface BoardModalProps {
 }
 
 export const BoardModal: React.FC<BoardModalProps> = ({ boardData, isOrganizer, onClose, onSelectTicket }) => {
+  if (!boardData) return null;
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
       <div className="cosi-card p-6 max-w-5xl w-full max-h-[92vh] overflow-y-auto space-y-5">

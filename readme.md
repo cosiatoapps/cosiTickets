@@ -363,7 +363,7 @@ flowchart TB
 ---
 
 <!-- AUTO-STATUS:START -->
-> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 17:24`
+> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 17:34`
 
 ### 📊 Estado de Módulos Backend (Auto-generado por `deploy_agent.py`)
 
@@ -380,6 +380,7 @@ flowchart TB
 ## 🚀 Historial de Despliegues Verificados
 
 <!-- AUTO-DEPLOY-LOG:START -->
+- **`v2.1.1`** (`2026-11-12 17:34` · `develop`): fix(ui): corregir prop boardData en BoardModal
 - **`v2.1.1`** (`2026-11-12 17:24` · `develop`): fix(board): ordenar PaymentTransaction por created_at en get_raffle_board
 - **`v2.1.1`** (`2026-11-12 17:13` · `develop`): fix(board): importar RaffleDesign y PaymentTransaction en CustomerController
 - **`v2.1.1`** (`2026-11-12 17:10` · `develop`): docs(readme): automatizar actualizacion de metricas y changelog en deploy_agent

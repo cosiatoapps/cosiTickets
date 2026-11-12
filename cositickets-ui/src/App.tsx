@@ -475,7 +475,7 @@ export default function App() {
         {/* MODALES */}
         {cosi.selectedRaffleBoard && (
           <BoardModal
-            board={cosi.selectedRaffleBoard}
+            boardData={cosi.selectedRaffleBoard}
             isOrganizer={isOrganizer}
             onClose={() => cosi.setSelectedRaffleBoard(null)}
             onSelectTicket={(ticket) => cosi.setManagingTicket(ticket)}
