@@ -362,6 +362,18 @@ export function useCosiController() {
     }
   };
 
+  const downloadRafflePdf = async (raffleId: string, raffleTitle?: string) => {
+    setLoading(true);
+    try {
+      await CosiAPI.downloadRaffleReportPdf(raffleId, raffleTitle);
+      showAlert('Reporte PDF ejecutivo descargado correctamente.');
+    } catch (err: any) {
+      showAlert(err.message || 'No se pudo generar el reporte PDF', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     currentUser,
     activeTab,
@@ -407,5 +419,6 @@ export function useCosiController() {
     publicRaffleError, 
     loadPublicRafflePage, 
     reserveFromPublicLink, 
+    downloadRafflePdf, 
   };
 }

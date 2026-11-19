@@ -1,4 +1,5 @@
 import React from 'react';
+import { FileDown } from 'lucide-react';
 import { RaffleBoardState, BoardItem } from '../models/types';
 
 interface BoardModalProps {
@@ -6,9 +7,10 @@ interface BoardModalProps {
   isOrganizer: boolean;
   onClose: () => void;
   onSelectTicket: (ticket: BoardItem) => void;
+  onDownloadPdf?: (raffleId: string, title?: string) => void;
 }
 
-export const BoardModal: React.FC<BoardModalProps> = ({ boardData, isOrganizer, onClose, onSelectTicket }) => {
+export const BoardModal: React.FC<BoardModalProps> = ({ boardData, isOrganizer, onClose, onSelectTicket, onDownloadPdf }) => {
   if (!boardData) return null;
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
@@ -21,6 +23,15 @@ export const BoardModal: React.FC<BoardModalProps> = ({ boardData, isOrganizer, 
             </p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white font-bold text-xl">✕</button>
+          {onDownloadPdf && (
+            <button
+              onClick={() => onDownloadPdf(boardData.id || boardData.raffle_id!, boardData.title)}
+              className="px-3 py-1.5 rounded-xl bg-cosi-cyan/15 hover:bg-cosi-cyan/25 text-cosi-cyan border border-cosi-cyan/30 text-xs font-bold flex items-center gap-1.5 transition"
+            >
+              <FileDown className="w-4 h-4" />
+              <span>Descargar PDF</span>
+            </button>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">

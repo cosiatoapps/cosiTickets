@@ -10,3 +10,4 @@ python-jose[cryptography]>=3.3.0
 pyotp>=2.9.0
 python-multipart>=0.0.9
 google-genai>=0.1.1
+reportlab>=4.1.0

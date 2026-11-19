@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from fastapi.responses import StreamingResponse
+
 from uuid import UUID
 
 from app.core.database import get_db
 from app.schemas.ticket import PublicReserveRequest, SwapTicketRequest
 from app.controllers.customer_controller import CustomerController
+from app.controllers.report_controller import ReportController
 
 router = APIRouter()
 
@@ -31,3 +34,12 @@ def get_board(raffle_id: UUID, db: Session = Depends(get_db)):
 @router.get("/public/raffles/{raffle_id}")
 def get_public_raffle_by_id(raffle_id: UUID, db: Session = Depends(get_db)):
     return CustomerController.get_public_raffle_detail(raffle_id, db)
+
+@router.get("/raffles/{raffle_id}/report.pdf")
+def download_raffle_report_pdf(raffle_id: UUID, db: Session = Depends(get_db)):
+    pdf_buffer, filename = ReportController.build_raffle_pdf(raffle_id, db)
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

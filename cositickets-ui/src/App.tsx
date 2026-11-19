@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Ticket, Users, Layers, LogOut, CheckCircle2, AlertCircle,
-  Search, UserX, UserCheck, Calendar, Grid, Edit3, Bell, Share2
+  Search, UserX, UserCheck, Calendar, Grid, Edit3, Bell, Share2, FileDown
 } from 'lucide-react';
 import { useCosiController } from './controllers/useCosiController';
 import { AuthView } from './views/AuthView';
@@ -275,7 +275,7 @@ export default function App() {
               <div className="mb-5">
                 <h2 className="text-base font-extrabold text-white">Mis Rifas Asignadas</h2>
                 <p className="text-xs text-slate-400">
-                  Gestiona puestos, registra abonos o copia el enlace público para vender directo por WhatsApp.
+                  Gestiona puestos, descarga el reporte PDF o copia el enlace público para vender directo por WhatsApp.
                 </p>
               </div>
 
@@ -311,22 +311,32 @@ export default function App() {
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="space-y-2">
                       <button
                         onClick={() => cosi.openBoardPreview(r.id)}
-                        className="flex-1 py-2.5 cosi-btn-purple rounded-xl text-xs font-bold flex items-center justify-center gap-2"
+                        className="w-full py-2.5 cosi-btn-purple rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                       >
                         <Grid className="w-4 h-4" />
                         <span>Gestionar Tablero</span>
                       </button>
-                      <button
-                        onClick={() => cosi.copyRaffleShareLink(r.id, r.title)}
-                        title="Copiar enlace público para compartir"
-                        className="px-3 py-2.5 bg-cosi-green/15 hover:bg-cosi-green/25 text-cosi-green border border-cosi-green/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        <span>Link</span>
-                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => cosi.copyRaffleShareLink(r.id, r.title)}
+                          title="Copiar enlace público para compartir"
+                          className="py-2 px-3 bg-cosi-green/15 hover:bg-cosi-green/25 text-cosi-green border border-cosi-green/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>Link</span>
+                        </button>
+                        <button
+                          onClick={() => cosi.downloadRafflePdf(r.id, r.title)}
+                          title="Descargar reporte ejecutivo en PDF"
+                          className="py-2 px-3 bg-cosi-cyan/15 hover:bg-cosi-cyan/25 text-cosi-cyan border border-cosi-cyan/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          <span>PDF</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -505,7 +515,7 @@ export default function App() {
                         <span className="text-cosi-yellow">{r.numbers_per_ticket} Núm/Boleto</span>
                       </div>
                       <h4 className="text-xs font-bold text-white">{r.title}</h4>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => cosi.openBoardPreview(r.id)}
                           className="py-1.5 px-2 cosi-btn-purple rounded-lg text-xs font-semibold flex items-center justify-center gap-1"
@@ -528,6 +538,14 @@ export default function App() {
                           <Share2 className="w-3.5 h-3.5" />
                           <span>Link</span>
                         </button>
+                        <button
+                          onClick={() => cosi.downloadRafflePdf(r.id, r.title)}
+                          title="Descargar reporte ejecutivo en PDF"
+                          className="py-1.5 px-2 bg-cosi-cyan/15 hover:bg-cosi-cyan/25 text-cosi-cyan border border-cosi-cyan/30 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition"
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          <span>PDF</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -546,6 +564,7 @@ export default function App() {
             isOrganizer={isOrganizer}
             onClose={() => cosi.setSelectedRaffleBoard(null)}
             onSelectTicket={(ticket) => cosi.setManagingTicket(ticket)}
+            onDownloadPdf={cosi.downloadRafflePdf}
           />
         )}
 

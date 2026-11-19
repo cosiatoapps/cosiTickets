@@ -116,4 +116,24 @@ export const CosiAPI = {
   // Sistema
   getPaymentMethods: () => request<any[]>('/system/payment-methods'),
   getDailySummary: () => request<any>('/system/cron/daily-summary'),
+
+  downloadRaffleReportPdf: async (raffleId: string, fallbackTitle?: string) => {
+    const token = localStorage.getItem('cositickets_token');
+    const res = await fetch(`${API_BASE}/raffles/${raffleId}/report.pdf`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const errorBody = await res.json().catch(() => ({}));
+      throw new Error(errorBody.detail || `Error generando PDF: ${res.status}`);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `CosiTickets_${(fallbackTitle || 'Reporte_Rifa').replace(/\s+/g, '_')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };
