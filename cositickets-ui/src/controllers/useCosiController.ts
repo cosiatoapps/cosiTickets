@@ -32,6 +32,79 @@ export function useCosiController() {
   // Analítica
   const [analyticsData, setAnalyticsData] = useState<any | null>(null);
 
+  // Estados para Enlace Público sin Login
+  const [publicRaffleMeta, setPublicRaffleMeta] = useState<any | null>(null);
+  const [publicRaffleReceipt, setPublicRaffleReceipt] = useState<any | null>(null);
+  const [publicRaffleError, setPublicRaffleError] = useState<string | null>(null);
+
+  const loadPublicRafflePage = async (raffleId: string) => {
+    setLoading(true);
+    setPublicRaffleError(null);
+    try {
+      const [meta, board] = await Promise.all([
+        CosiAPI.getPublicRaffleById(raffleId),
+        CosiAPI.getRaffleBoard(raffleId),
+      ]);
+      setPublicRaffleMeta(meta);
+      setSelectedRaffleBoard(board);
+    } catch (err: any) {
+      setPublicRaffleError(err.message || 'No se encontró la rifa solicitada.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reserveFromPublicLink = async (payload: {
+    raffle_id: string;
+    ticket_id: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+  }) => {
+    setLoading(true);
+    setPublicRaffleError(null);
+    try {
+      const res = await CosiAPI.reservePublicTicket(payload);
+      setPublicRaffleReceipt({
+        ...res,
+        buyerName: payload.customer_name,
+        buyerPhone: payload.customer_phone,
+      });
+      await loadPublicRafflePage(payload.raffle_id);
+      return true;
+    } catch (err: any) {
+      setPublicRaffleError(err.message || 'No se pudo completar el apartado.');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Busca parámetros URL
+  const [publicRaffleId, setPublicRaffleId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('raffle');
+  });
+
+  const exitPublicRaffleView = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('raffle');
+    window.history.replaceState({}, '', url.toString());
+    setPublicRaffleId(null);
+    setPublicRaffleMeta(null);
+    setPublicRaffleReceipt(null);
+  };
+
+  const copyRaffleShareLink = async (raffleId: string, raffleTitle?: string) => {
+    const shareUrl = `${window.location.origin}/?raffle=${raffleId}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showAlert(`Enlace público copiado${raffleTitle ? ` para "${raffleTitle}"` : ''}. ¡Listo para compartir por WhatsApp!`);
+    } catch {
+      showAlert(`Enlace público: ${shareUrl}`);
+    }
+  };
+
   const showAlert = (text: string, type: 'success' | 'error' = 'success') => {
     setAlertMsg({ type, text });
     setTimeout(() => setAlertMsg(null), 5000);
@@ -149,6 +222,7 @@ export function useCosiController() {
     }
   };
 
+  // --- LOGOUT ---
   const logout = () => {
     localStorage.removeItem('cositickets_token');
     localStorage.removeItem('cosi_user');
@@ -156,6 +230,8 @@ export function useCosiController() {
     setSelectedRaffleBoard(null);
     setCustomerTickets([]);
     setPublicRaffles([]);
+    setAnalyticsData(null);
+    setNotifications([]);
   };
 
   // --- ACCIONES ADMINISTRADOR ---
@@ -322,5 +398,14 @@ export function useCosiController() {
     swapCustomerTicket,
     showAlert,
     analyticsData, 
+    publicRaffleId, 
+    exitPublicRaffleView, 
+    copyRaffleShareLink, 
+    publicRaffleMeta, 
+    publicRaffleReceipt, 
+    setPublicRaffleReceipt, 
+    publicRaffleError, 
+    loadPublicRafflePage, 
+    reserveFromPublicLink, 
   };
 }

@@ -27,3 +27,7 @@ def my_tickets(customer_id: UUID, db: Session = Depends(get_db)):
 @router.get("/raffles/{raffle_id}/board")
 def get_board(raffle_id: UUID, db: Session = Depends(get_db)):
     return CustomerController.get_raffle_board(raffle_id, db)
+
+@router.get("/public/raffles/{raffle_id}")
+def get_public_raffle_by_id(raffle_id: UUID, db: Session = Depends(get_db)):
+    return CustomerController.get_public_raffle_detail(raffle_id, db)

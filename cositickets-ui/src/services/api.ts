@@ -32,6 +32,10 @@ export const CosiAPI = {
       body: JSON.stringify({ ...payload, role: payload.role || 'CUSTOMER' }),
     }),
 
+  // Analítica (Admin & Organizador)
+  getAdminAnalytics: () => request<any>('/admin/analytics'),
+  getOrganizerAnalytics: (organizerId: string) => request<any>(`/organizer/analytics/${organizerId}`),
+
   // Políticas de Seguridad y Usuarios (Admin)
   getSecurityPolicies: () => request<SecurityPolicy>('/admin/security-policies'),
 
@@ -84,8 +88,10 @@ export const CosiAPI = {
       body: JSON.stringify({ prompt, primary_color: primaryColor, secondary_color: secondaryColor }),
     }),
 
-  // Portal Cliente
+  // Portal Cliente y Enlace Público (Sin Login)
   getPublicRaffles: () => request<any[]>('/public/raffles'),
+
+  getPublicRaffleById: (raffleId: string) => request<any>(`/public/raffles/${raffleId}`),
 
   reservePublicTicket: (data: {
     raffle_id: string;
@@ -110,6 +116,4 @@ export const CosiAPI = {
   // Sistema
   getPaymentMethods: () => request<any[]>('/system/payment-methods'),
   getDailySummary: () => request<any>('/system/cron/daily-summary'),
-  getAdminAnalytics: () => request<any>('/admin/analytics'),
-  getOrganizerAnalytics: (organizerId: string) => request<any>(`/organizer/analytics/${organizerId}`),
 };

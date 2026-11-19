@@ -102,8 +102,20 @@ class CustomerController:
             metadata_info={"raffle_id": str(raffle.id), "ticket_id": str(ticket.id), "numbers": nums},
         ))
 
+        organizer = db.query(User).filter(User.id == raffle.organizer_id).first()
         db.commit()
-        return {"message": "Boleto apartado exitosamente.", "customer_id": str(customer.id), "numbers": nums}
+
+        return {
+            "message": "Boleto apartado exitosamente.",
+            "customer_id": str(customer.id),
+            "ticket_id": str(ticket.id),
+            "ticket_code": ticket.ticket_code,
+            "numbers": nums,
+            "raffle_title": raffle.title,
+            "ticket_price": float(raffle.ticket_price),
+            "organizer_name": organizer.name if organizer else "Organizador",
+            "organizer_phone": organizer.phone if organizer and organizer.phone else "",
+        }
 
     @staticmethod
     def swap_ticket(payload: SwapTicketRequest, db: Session) -> dict:
@@ -248,6 +260,38 @@ class CustomerController:
                 else 0,
             },
             "board": board_items,
+        }
+
+    @staticmethod
+    def get_public_raffle_detail(raffle_id: UUID, db: Session) -> dict:
+        raffle = db.query(Raffle).filter(Raffle.id == raffle_id).first()
+        if not raffle:
+            raise HTTPException(status_code=404, detail="Rifa no encontrada.")
+
+        organizer = db.query(User).filter(User.id == raffle.organizer_id).first()
+        total_t = db.query(Ticket).filter(Ticket.raffle_id == raffle.id).count()
+        paid_t = db.query(Ticket).filter(and_(Ticket.raffle_id == raffle.id, Ticket.status == "PAID")).count()
+        reserved_t = db.query(Ticket).filter(and_(Ticket.raffle_id == raffle.id, Ticket.status == "RESERVED")).count()
+        avail_t = total_t - (paid_t + reserved_t)
+
+        return {
+            "id": str(raffle.id),
+            "title": raffle.title,
+            "description": raffle.description,
+            "prize_name": raffle.prize_name,
+            "ticket_price": float(raffle.ticket_price),
+            "draw_date": raffle.draw_date.isoformat(),
+            "numbers_per_ticket": raffle.numbers_per_ticket,
+            "status": raffle.status,
+            "organizer_name": organizer.name if organizer else "Organizador CosiTickets",
+            "organizer_phone": organizer.phone if organizer and organizer.phone else "",
+            "metrics": {
+                "total": total_t,
+                "paid": paid_t,
+                "reserved": reserved_t,
+                "available": avail_t,
+                "percentage_sold": round(((paid_t + reserved_t) / total_t * 100), 1) if total_t > 0 else 0,
+            },
         }
 
     @staticmethod

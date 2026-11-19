@@ -363,7 +363,7 @@ flowchart TB
 ---
 
 <!-- AUTO-STATUS:START -->
-> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-12 18:50`
+> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-18 19:02`
 
 ### 📊 Estado de Módulos Backend (Auto-generado por `deploy_agent.py`)
 
@@ -371,15 +371,16 @@ flowchart TB
 | :--- | :--- | :---: |
 | **Admin** | `app/routers/admin_router.py` | `8` |
 | **Auth** | `app/routers/auth_router.py` | `2` |
-| **Customer** | `app/routers/customer_router.py` | `5` |
+| **Customer** | `app/routers/customer_router.py` | `6` |
 | **Organizer** | `app/routers/organizer_router.py` | `8` |
 | **System** | `app/routers/system_router.py` | `3` |
-| **Total API REST** | **5 Routers Modulares** | **`26`** |
+| **Total API REST** | **5 Routers Modulares** | **`27`** |
 <!-- AUTO-STATUS:END -->
 
 ## 🚀 Historial de Despliegues Verificados
 
 <!-- AUTO-DEPLOY-LOG:START -->
+- **`v2.1.1`** (`2026-11-18 19:02` · `develop`): feat(public-link): enlace compartible por rifa sin login y confirmacion WhatsApp
 - **`v2.1.1`** (`2026-11-12 18:50` · `develop`): fix(analytics): asegurar endpoint admin/analytics y manejo de estado por defecto en UI
 - **`v2.1.1`** (`2026-11-12 18:43` · `develop`): feat(ui): integrar AnalyticsDashboardView en paneles Admin y Manager
 - **`v2.1.1`** (`2026-11-12 18:14` · `develop`): fix(customer): blindar arreglos customerTickets y publicRaffles en controlador y vista
