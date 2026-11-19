@@ -37,6 +37,10 @@ export function useCosiController() {
   const [publicRaffleReceipt, setPublicRaffleReceipt] = useState<any | null>(null);
   const [publicRaffleError, setPublicRaffleError] = useState<string | null>(null);
 
+  const [creatingRaffleModalOpen, setCreatingRaffleModalOpen] = useState(false);
+  const [aiStudioRaffle, setAiStudioRaffle] = useState<any | null>(null);
+  const [generatedAssetsPreview, setGeneratedAssetsPreview] = useState<any | null>(null);
+
   const loadPublicRafflePage = async (raffleId: string) => {
     setLoading(true);
     setPublicRaffleError(null);
@@ -374,6 +378,57 @@ export function useCosiController() {
     }
   };
 
+  const createOrganizerRaffle = async (payload: {
+    title: string;
+    description?: string;
+    prize_name: string;
+    prize_cost: number;
+    ticket_price: number;
+    number_range_start: number;
+    number_range_end: number;
+    numbers_per_ticket: number;
+    draw_date: string;
+  }) => {
+    if (!currentUser) return null;
+    setLoading(true);
+    try {
+      const res = await CosiAPI.createRaffle(currentUser.id, {
+        ...payload,
+        draw_date: new Date(payload.draw_date).toISOString(),
+      });
+      showAlert(res.message || 'Rifa creada exitosamente.');
+      await loadData();
+      return res;
+    } catch (err: any) {
+      showAlert(err.message || 'No se pudo crear la rifa (verifica tus cuotas).', 'error');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateRaffleAIDesign = async (
+    raffleId: string,
+    prompt: string,
+    primaryColor: string,
+    secondaryColor: string
+  ) => {
+    setLoading(true);
+    try {
+      const res = await CosiAPI.generateAIAssets(raffleId, prompt, primaryColor, secondaryColor);
+      setGeneratedAssetsPreview(res);
+      showAlert('Artes visuales generados con IA y vinculados a la rifa.');
+      await loadData();
+      return res;
+    } catch (err: any) {
+      showAlert(err.message || 'Error generando diseño con IA', 'error');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return {
     currentUser,
     activeTab,
@@ -420,5 +475,13 @@ export function useCosiController() {
     loadPublicRafflePage, 
     reserveFromPublicLink, 
     downloadRafflePdf, 
+    creatingRaffleModalOpen, 
+    setCreatingRaffleModalOpen, 
+    aiStudioRaffle, 
+    setAiStudioRaffle, 
+    generatedAssetsPreview, 
+    setGeneratedAssetsPreview, 
+    createOrganizerRaffle, 
+    generateRaffleAIDesign, 
   };
 }

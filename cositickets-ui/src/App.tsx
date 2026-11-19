@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   Ticket, Users, Layers, LogOut, CheckCircle2, AlertCircle,
-  Search, UserX, UserCheck, Calendar, Grid, Edit3, Bell, Share2, FileDown
+  Search, UserX, UserCheck, Calendar, Grid, Edit3, Bell, Share2, FileDown, 
+  PlusCircle, Sparkles
 } from 'lucide-react';
 import { useCosiController } from './controllers/useCosiController';
 import { AuthView } from './views/AuthView';
@@ -10,6 +11,7 @@ import { TicketManagerModal } from './views/TicketManagerModal';
 import { CustomerPortalView } from './views/CustomerPortalView';
 import { AnalyticsDashboardView } from './views/AnalyticsDashboardView';
 import { PublicRaffleView } from './views/PublicRaffleView';
+import { CreateRaffleModal } from './views/CreateRaffleModal';
 
 export default function App() {
   const cosi = useCosiController();
@@ -272,13 +274,25 @@ export default function App() {
             )}
 
             <div className="cosi-card p-6">
-              <div className="mb-5">
-                <h2 className="text-base font-extrabold text-white">Mis Rifas Asignadas</h2>
-                <p className="text-xs text-slate-400">
-                  Gestiona puestos, descarga el reporte PDF o copia el enlace público para vender directo por WhatsApp.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div>
+                  <h2 className="text-base font-extrabold text-white">Mis Rifas Asignadas</h2>
+                  <p className="text-xs text-slate-400">
+                    Gestiona puestos, descarga el reporte PDF o genera artes promocionales con IA.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    cosi.setGeneratedAssetsPreview(null);
+                    cosi.setAiStudioRaffle(null);
+                    cosi.setCreatingRaffleModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 cosi-btn-yellow rounded-xl text-xs font-extrabold flex items-center gap-2 shrink-0"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Nueva Rifa</span>
+                </button>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {cosi.rafflesList.map((r: any) => (
                   <div
@@ -546,6 +560,17 @@ export default function App() {
                           <FileDown className="w-3.5 h-3.5" />
                           <span>PDF</span>
                         </button>
+                        <button
+                          onClick={() => {
+                            cosi.setGeneratedAssetsPreview(null);
+                            cosi.setAiStudioRaffle(r);
+                            cosi.setCreatingRaffleModalOpen(true);
+                          }}
+                          className="w-full py-2 bg-cosi-yellow/15 hover:bg-cosi-yellow/25 text-cosi-yellow border border-cosi-yellow/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Estudio Creativo IA</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -614,6 +639,20 @@ export default function App() {
               </form>
             </div>
           </div>
+        )}
+
+        {isOrganizer && cosi.creatingRaffleModalOpen && (
+          <CreateRaffleModal
+            initialRaffle={cosi.aiStudioRaffle}
+            loading={cosi.loading}
+            generatedPreview={cosi.generatedAssetsPreview}
+            onClose={() => {
+              cosi.setCreatingRaffleModalOpen(false);
+              cosi.setAiStudioRaffle(null);
+            }}
+            onCreateRaffle={cosi.createOrganizerRaffle}
+            onGenerateAI={cosi.generateRaffleAIDesign}
+          />
         )}
       </main>
     </div>

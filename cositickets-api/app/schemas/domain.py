@@ -48,10 +48,11 @@ class RaffleCreate(BaseModel):
     title: str
     description: Optional[str] = None
     prize_name: str
+    prize_cost: float = 0.0
     ticket_price: float
     number_range_start: int = 0
     number_range_end: int = 99
-    numbers_per_ticket: int = 1
+    numbers_per_ticket: int = 1  # 1, 2 o 3 números
     draw_date: datetime
 
 class RaffleUpdate(BaseModel):

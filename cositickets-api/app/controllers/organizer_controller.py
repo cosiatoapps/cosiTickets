@@ -1,8 +1,21 @@
-from datetime import datetime
+import random
+from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import HTTPException
+from sqlalchemy import extract, and_
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+
+from app.models.domain import (
+    Raffle, RaffleDesign, Ticket, TicketNumber, OrganizerLimit, User, AuditLog
+)
+from app.schemas.domain import RaffleCreate, RaffleUpdate, GenerateDesignRequest
+from app.schemas.ticket import TicketManagementUpdate
+from app.core.security import hash_password
+
+try:
+    from app.agents.ai_design_agent import generate_raffle_assets
+except ImportError:
+    from app.ai_agent import generate_raffle_assets
 
 from app.models import (
     Raffle,
@@ -16,15 +29,6 @@ from app.models import (
     RaffleDesign,
     AuditLog,
 )
-from app.schemas.domain import RaffleCreate, RaffleUpdate, GenerateDesignRequest
-from app.schemas.ticket import TicketManagementUpdate
-from app.core.security import hash_password
-
-try:
-    from app.agents.ai_design_agent import generate_raffle_assets
-except ImportError:
-    from app.ai_agent import generate_raffle_assets
-
 
 class OrganizerController:
 
@@ -265,3 +269,154 @@ class OrganizerController:
             notif.is_read = True
             db.commit()
         return {"status": "ok"}
+
+    @staticmethod
+    def create_raffle(payload: RaffleCreate, organizer_id: UUID, db: Session) -> dict:
+        organizer = db.query(User).filter(User.id == organizer_id, User.role == "ORGANIZER").first()
+        if not organizer or not organizer.is_active:
+            raise HTTPException(status_code=403, detail="Responsable no válido o inactivo.")
+
+        if payload.numbers_per_ticket not in (1, 2, 3):
+            raise HTTPException(status_code=400, detail="Los números por boleto deben ser 1, 2 o 3.")
+
+        if payload.number_range_end <= payload.number_range_start:
+            raise HTTPException(status_code=400, detail="El rango final debe ser mayor al inicial.")
+
+        # 1. Validar cuotas asignadas por Administrador (OrganizerLimit)
+        limits = db.query(OrganizerLimit).filter(
+            OrganizerLimit.organizer_id == organizer_id,
+            OrganizerLimit.is_active == True
+        ).first()
+
+        max_total = limits.max_total_raffles if limits else 10
+        max_monthly = limits.max_monthly_raffles if limits else 5
+
+        total_active = db.query(Raffle).filter(
+            Raffle.organizer_id == organizer_id,
+            Raffle.status.in_(["ACTIVE", "DRAFT", "PAUSED"])
+        ).count()
+        if total_active >= max_total:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Has alcanzado tu límite máximo de {max_total} rifas activas."
+            )
+
+        now = datetime.now(timezone.utc)
+        monthly_count = db.query(Raffle).filter(
+            Raffle.organizer_id == organizer_id,
+            extract("year", Raffle.created_at) == now.year,
+            extract("month", Raffle.created_at) == now.month,
+        ).count()
+        if monthly_count >= max_monthly:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Has alcanzado tu cupo mensual de {max_monthly} rifas."
+            )
+
+        # 2. Preparar pool de números y validar divisibilidad
+        total_numbers = (payload.number_range_end - payload.number_range_start) + 1
+        if total_numbers % payload.numbers_per_ticket != 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"La cantidad de números ({total_numbers}) debe ser divisible entre {payload.numbers_per_ticket}."
+            )
+
+        digits = len(str(payload.number_range_end))
+        number_pool = [
+            str(n).zfill(digits)
+            for n in range(payload.number_range_start, payload.number_range_end + 1)
+        ]
+        if payload.numbers_per_ticket > 1:
+            random.shuffle(number_pool)
+
+        # 3. Crear Rifa
+        raffle = Raffle(
+            organizer_id=organizer_id,
+            title=payload.title,
+            description=payload.description,
+            prize_name=payload.prize_name,
+            prize_cost=payload.prize_cost,
+            ticket_price=payload.ticket_price,
+            number_range_start=payload.number_range_start,
+            number_range_end=payload.number_range_end,
+            numbers_per_ticket=payload.numbers_per_ticket,
+            draw_date=payload.draw_date,
+            status="ACTIVE",
+        )
+        db.add(raffle)
+        db.flush()
+
+        # 4. Generar Boletos y asignar Números
+        total_tickets = total_numbers // payload.numbers_per_ticket
+        code_digits = max(3, len(str(total_tickets)))
+
+        for idx in range(total_tickets):
+            ticket = Ticket(
+                raffle_id=raffle.id,
+                ticket_code=f"T-{str(idx + 1).zfill(code_digits)}",
+                status="AVAILABLE",
+            )
+            db.add(ticket)
+            db.flush()
+
+            slice_nums = number_pool[idx * payload.numbers_per_ticket : (idx + 1) * payload.numbers_per_ticket]
+            for val in sorted(slice_nums):
+                db.add(TicketNumber(ticket_id=ticket.id, number_value=val))
+
+        # 5. Bitácora de Auditoría
+        db.add(AuditLog(
+            entity_name="raffles",
+            entity_id=raffle.id,
+            actor_id=organizer_id,
+            action="CREATE",
+            old_values={},
+            new_values={
+                "title": raffle.title,
+                "prize_name": raffle.prize_name,
+                "prize_cost": float(raffle.prize_cost),
+                "ticket_price": float(raffle.ticket_price),
+                "total_tickets": total_tickets,
+            },
+        ))
+        db.commit()
+
+        return {
+            "message": f"Rifa '{raffle.title}' creada con {total_tickets} boletos disponibles.",
+            "raffle_id": str(raffle.id),
+            "total_tickets": total_tickets,
+        }
+
+    @staticmethod
+    def generate_assets(raffle_id: UUID, payload: GenerateDesignRequest, db: Session) -> dict:
+        raffle = db.query(Raffle).filter(Raffle.id == raffle_id).first()
+        if not raffle:
+            raise HTTPException(status_code=404, detail="Rifa no encontrada.")
+
+        assets = generate_raffle_assets(payload.prompt, raffle.title)
+
+        design = db.query(RaffleDesign).filter(RaffleDesign.raffle_id == raffle_id).first()
+        if not design:
+            design = RaffleDesign(raffle_id=raffle_id)
+            db.add(design)
+
+        design.primary_color = payload.primary_color
+        design.secondary_color = payload.secondary_color
+        design.background_image_url = assets["background_image_url"]
+        design.ticket_template_url = assets["ticket_template_url"]
+        if hasattr(design, "ai_prompt_used"):
+            design.ai_prompt_used = payload.prompt
+        db.commit()
+
+        return {
+            "message": "Artes visuales generados con IA y vinculados a la rifa.",
+            "models_used": {
+                "board": assets.get("board_model_used", "gemini-imagen-3"),
+                "ticket": assets.get("ticket_model_used", "gemini-imagen-3"),
+            },
+            "design": {
+                "primary_color": design.primary_color,
+                "secondary_color": design.secondary_color,
+                "background_image_url": design.background_image_url,
+                "ticket_template_url": design.ticket_template_url,
+            },
+        }

@@ -136,4 +136,29 @@ export const CosiAPI = {
     a.remove();
     window.URL.revokeObjectURL(url);
   },
+
+  createRaffle: (
+    organizerId: string,
+    payload: {
+      title: string;
+      description?: string;
+      prize_name: string;
+      prize_cost: number;
+      ticket_price: number;
+      number_range_start: number;
+      number_range_end: number;
+      numbers_per_ticket: number;
+      draw_date: string;
+    }
+  ) =>
+    request<any>(`/organizer/raffles?organizer_id=${organizerId}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  generateAIAssets: (raffleId: string, prompt: string, primaryColor: string, secondaryColor: string) =>
+    request<any>(`/organizer/raffles/${raffleId}/generate-assets`, {
+      method: 'POST',
+      body: JSON.stringify({ prompt, primary_color: primaryColor, secondary_color: secondaryColor }),
+    }),
 };
