@@ -350,6 +350,18 @@ export default function App() {
                           <FileDown className="w-3.5 h-3.5" />
                           <span>PDF</span>
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            cosi.setGeneratedAssetsPreview(null);
+                            cosi.setAiStudioRaffle(r);
+                            cosi.setCreatingRaffleModalOpen(true);
+                          }}
+                          className="w-full py-2 bg-cosi-yellow/15 hover:bg-cosi-yellow/25 text-cosi-yellow border border-cosi-yellow/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Estudio Creativo IA</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -593,6 +605,20 @@ export default function App() {
           />
         )}
 
+        {isOrganizer && cosi.creatingRaffleModalOpen && (
+          <CreateRaffleModal
+            initialRaffle={cosi.aiStudioRaffle}
+            loading={cosi.loading}
+            generatedPreview={cosi.generatedAssetsPreview}
+            onClose={() => {
+              cosi.setCreatingRaffleModalOpen(false);
+              cosi.setAiStudioRaffle(null);
+            }}
+            onCreateRaffle={cosi.createOrganizerRaffle}
+            onGenerateAI={cosi.generateRaffleAIDesign}
+          />
+        )}
+
         {!isCustomer && cosi.managingTicket && cosi.selectedRaffleBoard && (
           <TicketManagerModal
             ticket={cosi.managingTicket}
@@ -639,20 +665,6 @@ export default function App() {
               </form>
             </div>
           </div>
-        )}
-
-        {isOrganizer && cosi.creatingRaffleModalOpen && (
-          <CreateRaffleModal
-            initialRaffle={cosi.aiStudioRaffle}
-            loading={cosi.loading}
-            generatedPreview={cosi.generatedAssetsPreview}
-            onClose={() => {
-              cosi.setCreatingRaffleModalOpen(false);
-              cosi.setAiStudioRaffle(null);
-            }}
-            onCreateRaffle={cosi.createOrganizerRaffle}
-            onGenerateAI={cosi.generateRaffleAIDesign}
-          />
         )}
       </main>
     </div>
