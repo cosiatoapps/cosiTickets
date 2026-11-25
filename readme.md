@@ -363,7 +363,7 @@ flowchart TB
 ---
 
 <!-- AUTO-STATUS:START -->
-> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-18 20:20`
+> **Versión Activa:** `v2.1.1` | **Rama:** `develop` | **Último Build Docker Verificado:** `2026-11-25 12:46`
 
 ### 📊 Estado de Módulos Backend (Auto-generado por `deploy_agent.py`)
 
@@ -380,6 +380,7 @@ flowchart TB
 ## 🚀 Historial de Despliegues Verificados
 
 <!-- AUTO-DEPLOY-LOG:START -->
+- **`v2.1.1`** (`2026-11-25 12:46` · `develop`): Load: inicio ambiente de pruebas
 - **`v2.1.1`** (`2026-11-18 20:20` · `develop`): feat(organizer): creacion de rifas con cuotas y estudio creativo IA
 - **`v2.1.1`** (`2026-11-18 20:00` · `develop`): feat(organizer): creacion de rifas con cuotas y estudio creativo IA
 - **`v2.1.1`** (`2026-11-18 19:25` · `develop`): feat(reports): reporte PDF ejecutivo con tablero a color y detalle de cartera
